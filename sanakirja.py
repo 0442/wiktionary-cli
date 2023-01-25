@@ -1,6 +1,7 @@
 #!/bin/env python3
 
-import pywikibot
+#import pywikibot
+from pwiki.wiki import Wiki
 import re
 import sys 
 import functools
@@ -43,7 +44,7 @@ langs_in_sv = {
         "sv" : "svenska",
 }
 
-def format_en_ja_sv_translations(tr_row: str) -> str:
+def format_en_sv_translations(tr_row: str) -> str:
         output_str = ""
         split = tr_row.split(": ")
         lang = split[0].strip(" *")
@@ -66,8 +67,8 @@ def format_en_ja_sv_translations(tr_row: str) -> str:
         output_str = "Freq\t|\tTranslation\n" + f"{8*'-'}+{5*8*'-'}\n" + output_str
         return  output_str.strip("\n")
 
-def format_fi_translations(tr_row: str) -> str:
-        return f"Fancy formatting for Finnish not yet supported.\n{tr_row}"
+def format_fi_ja_translations(tr_row: str) -> str:
+        return f"Fancy formatting for Finnish and Japanese not yet supported.\n{tr_row}"
 
 # Functions for getting translations from wiktionary pages of certain languages, parsed into a printable format.
 # Pages for some languages are formatted differently, thus a separate function for each supported language is given.
@@ -75,7 +76,7 @@ def parse_fi_translations(page_text:str, to_lang) -> str:
         try:
                 tr_match = re.search(f"\*{langs_in_fi[to_lang]}: .*", page_text)
                 tr_row = page_text[tr_match.start() : tr_match.end()]
-                return format_fi_translations(tr_row)
+                return format_fi_ja_translations(tr_row)
         except:
                 return None 
 
@@ -83,15 +84,15 @@ def parse_en_translations(page_text:str, to_lang:str) -> str:
         try:
                 translations = re.search(f"\* {langs_in_en[to_lang]}: .*", page_text)
                 tr_row = page_text[translations.start() : translations.end()]
-                return format_en_ja_sv_translations(tr_row)
+                return format_en_sv_translations(tr_row)
         except:
                 return None
 
 def parse_ja_translations(page_text:str, to_lang:str) -> str:
         try:
-                translations = re.search(".*\{\{"+langs_in_ja[to_lang]+"\}\}.*", page_text)
+                translations = re.search("[^}.]*"+langs_in_ja[to_lang]+"\}\}.*", page_text)
                 tr_row = page_text[translations.start() : translations.end()]
-                return format_en_ja_sv_translations(tr_row)
+                return format_fi_ja_translations(tr_row)
         except:
                 return None
 
@@ -99,7 +100,7 @@ def parse_sv_translations(page_text:str, to_lang:str) -> str:
         try:
                 translations = re.search(f"\*{langs_in_sv[to_lang]}: .*", page_text)
                 tr_row = page_text[translations.start() : translations.end()]
-                return format_en_ja_sv_translations(tr_row)
+                return format_en_sv_translations(tr_row)
         except: 
                 return None
 
@@ -148,15 +149,14 @@ def dict(args:list[str]) -> int:
                 return 1
 
         # form wiki link and object from chosen language
-        site = pywikibot.Site(f'wiktionary:{lang}')
-        page = pywikibot.Page(site, word)
+        wiki = Wiki(f'{lang}.wiktionary.org')
 
         # check if page exists
-        if not page.exists():
+        if not wiki.exists(word):
                 word_not_found(word, lang)
                 return 1
 
-        page_text = page.text
+        page_text = wiki.page_text()
         print(page_text)
 
         return 0
@@ -186,16 +186,16 @@ def translate(args:list[str]) -> int:
                 return 1
 
         # form wiki link and object from chosen language
-        site = pywikibot.Site(from_lang, 'wiktionary')
-        page = pywikibot.Page(site, word)
+        wiki = Wiki(F"{from_lang}.wiktionary.org")
 
         # check if page exists
-        if not page.exists():
+        if not wiki.exists(word):
                 word_not_found(word, from_lang)
                 return 1
         
+        page_text = wiki.page_text(word)
 
-        raw_titles = re.findall(f"=+[^=^\n.]+=+", page.text)
+        raw_titles = re.findall(f"=+[^=^\n.]+=+", page_text)
         titles = list(map(lambda t: t.strip("=}{").lower(), raw_titles))
         """
         # check if found page is for a word from the intended language
@@ -206,13 +206,13 @@ def translate(args:list[str]) -> int:
         """
 
         if from_lang == "fi":
-                tr = parse_fi_translations(page.text, to_lang)
+                tr = parse_fi_translations(page_text, to_lang)
         elif from_lang == "en":
-                tr = parse_en_translations(page.text, to_lang)
+                tr = parse_en_translations(page_text, to_lang)
         elif from_lang == "ja":
-                tr = parse_ja_translations(page.text, to_lang)
+                tr = parse_ja_translations(page_text, to_lang)
         elif from_lang == "sv":
-                tr = parse_sv_translations(page.text, to_lang)
+                tr = parse_sv_translations(page_text, to_lang)
 
         if tr:
                 print(tr)
