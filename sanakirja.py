@@ -120,8 +120,8 @@ def print_supported_languages() -> None:
 
 def print_help_msg() -> None:
         print("Usage: sanakirja [OPTION] [ARGS]")
-        print("   or: sanakirja [OPTION] -t [WORD] [TRANSLATE_FROM] [TRANSLATE_TO]")
-        print("   or: sanakirja [OPTION] -d [WORD] [LANGUAGE]")
+        print("   or: sanakirja [OPTION] -t [TRANSLATE_FROM] [TRANSLATE_TO] [WORD]")
+        print("   or: sanakirja [OPTION] -d [LANGUAGE] [WORD]")
         print("")
         print("  -d, --dictionary\tget dictionary entry for word in given language")
         print("  -t, --translate \ttranslate word to given language")
@@ -138,8 +138,8 @@ def dict(args:list[str]) -> int:
                 print_help_msg()
                 exit(1)
 
-        word = args[0]
-        lang = args[1]
+        lang = args[0]
+        word = args[1]
 
         # check if user gave a usable language
         if lang not in supported_languages:
@@ -165,9 +165,9 @@ def translate(args:list[str]) -> int:
                 print_help_msg()
                 exit(1)
 
-        word = args[0]
-        from_lang = args[1]
-        to_lang = args[2]
+        from_lang = args[0]
+        to_lang = args[1]
+        word = args[2]
 
         if from_lang == to_lang:
                 print("Give two different languages for translation.")
