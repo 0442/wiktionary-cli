@@ -43,33 +43,63 @@ langs_in_sv = {
         "sv" : "svenska",
 }
 
+def format_en_ja_sv_translations(tr_row: str) -> str:
+        output_str = ""
+        split = tr_row.split(": ")
+        lang = split[0].strip(" *")
+        entries = split[1].split("}}, ")
+
+        for entry in entries:
+                split = entry.split(" {{")
+
+                raw_qualifier = "".join([i for i in split if "qualifier" in i])
+                qualifier = ": ".join(raw_qualifier.strip("}{").split("|"))
+
+                main_part = split[0].strip("}{")
+                main_part = main_part.split("|")
+                freq = main_part[0]
+                lang = main_part[1]
+                tr = "\t".join(main_part[2:]).replace("tr=", " ")
+
+                output_str += f"{freq}\t{tr}\t{qualifier}\n"
+
+        output_str = "Freq\tTranslation\tOther notes\n" + output_str
+        return  output_str.strip("\n")
+
+def format_fi_translations(tr_row: str) -> str:
+        return f"Fancy formatting not currently supported.\n{tr_row}"
+
 # Functions for getting translations from wiktionary pages of certain languages, parsed into a printable format.
 # Pages for some languages are formatted differently, thus a separate function for each supported language is given.
 def parse_fi_translations(page_text:str, to_lang) -> str:
         try:
-                translations = re.search(f"\*{langs_in_fi[to_lang]}: .*", page_text)
-                return page_text[translations.start() : translations.end()]
+                tr_match = re.search(f"\*{langs_in_fi[to_lang]}: .*", page_text)
+                tr_row = page_text[tr_match.start() : tr_match.end()]
+                return format_fi_translations(tr_row)
         except:
                 return None 
 
 def parse_en_translations(page_text:str, to_lang:str) -> str:
         try:
                 translations = re.search(f"\* {langs_in_en[to_lang]}: .*", page_text)
-                return page_text[translations.start() : translations.end()]
+                tr_row = page_text[translations.start() : translations.end()]
+                return format_en_ja_sv_translations(tr_row)
         except:
                 return None
 
 def parse_ja_translations(page_text:str, to_lang:str) -> str:
         try:
-                translations = re.search("\*\[\[\{\{"+langs_in_ja[to_lang]+"\}\}\]\]: .*", page_text)
-                return page_text[translations.start() : translations.end()]
+                translations = re.search(".*\{\{"+langs_in_ja[to_lang]+"\}\}.*", page_text)
+                tr_row = page_text[translations.start() : translations.end()]
+                return format_en_ja_sv_translations(tr_row)
         except:
                 return None
 
 def parse_sv_translations(page_text:str, to_lang:str) -> str:
         try:
                 translations = re.search(f"\*{langs_in_sv[to_lang]}: .*", page_text)
-                return page_text[translations.start() : translations.end()]
+                tr_row = page_text[translations.start() : translations.end()]
+                return format_en_ja_sv_translations(tr_row)
         except: 
                 return None
 
