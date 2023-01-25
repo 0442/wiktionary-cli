@@ -7,7 +7,7 @@ import functools
 
 supported_languages = ["en", "fi", "ja", "sv"]
 
-# how languages used in eg. titles are written in wikipedia in different languages.
+# lookup tables for how languages used in eg. titles are written in wikipedia in different languages.
 lang_in_own_lang = {
         "en" : "english",
         "fi" : "suomi",
@@ -59,15 +59,15 @@ def format_en_ja_sv_translations(tr_row: str) -> str:
                 main_part = main_part.split("|")
                 freq = main_part[0]
                 lang = main_part[1]
-                tr = "\t".join(main_part[2:]).replace("tr=", " ")
+                tr = ",".join(main_part[2:]).replace("tr=", " ")
 
-                output_str += f"{freq}\t{tr}\t{qualifier}\n"
+                output_str += f"{freq}\t|\t{tr}\t\t{qualifier}\n"
 
-        output_str = "Freq\tTranslation\tOther notes\n" + output_str
+        output_str = "Freq\t|\tTranslation\n" + f"{8*'-'}+{5*8*'-'}\n" + output_str
         return  output_str.strip("\n")
 
 def format_fi_translations(tr_row: str) -> str:
-        return f"Fancy formatting not currently supported.\n{tr_row}"
+        return f"Fancy formatting for Finnish not yet supported.\n{tr_row}"
 
 # Functions for getting translations from wiktionary pages of certain languages, parsed into a printable format.
 # Pages for some languages are formatted differently, thus a separate function for each supported language is given.
@@ -120,7 +120,7 @@ def print_supported_languages() -> None:
 
 def print_help_msg() -> None:
         print("Usage: sanakirja [OPTION] [ARGS]")
-        print("   or: sanakirja [OPTION] -t [WORD] [FROM_LANG] [TO_LANG]")
+        print("   or: sanakirja [OPTION] -t [WORD] [TRANSLATE_FROM] [TRANSLATE_TO]")
         print("   or: sanakirja [OPTION] -d [WORD] [LANGUAGE]")
         print("")
         print("  -d, --dictionary\tget dictionary entry for word in given language")
@@ -217,7 +217,7 @@ def translate(args:list[str]) -> int:
         if tr:
                 print(tr)
         else:
-                print(f"No translation from {langs_in_en[from_lang]} to {langs_in_en[to_lang]} for given word.")
+                print(f"No translation from {langs_in_en[from_lang]} to {langs_in_en[to_lang]} found for \"{word}\".")
 
         return 0
 
@@ -250,8 +250,6 @@ def main() -> int:
                 else:
                         print_help_msg()
                         return 1
-
-
 
 
 if __name__ == "__main__":
