@@ -155,7 +155,7 @@ def dict(args:list[str]) -> int:
                 word_not_found(word, lang)
                 return 1
 
-        page_text = wiki.page_text()
+        page_text = wiki.page_text(word)
         print(page_text)
 
         return 0
