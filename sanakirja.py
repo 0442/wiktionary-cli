@@ -1,6 +1,5 @@
 #!/bin/env python3
 
-#import pywikibot
 from pwiki.wiki import Wiki
 import re
 import sys 
