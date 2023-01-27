@@ -8,7 +8,7 @@ class _Section:
                 self.__children = children
                 self.__content = content
                 self.__depth = int(title.count("=") / 2)
-                self.__title = title#.strip(" =}{")
+                self.__title = title.strip(" =}{")
 
         @property
         def title(self) -> str:
