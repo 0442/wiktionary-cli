@@ -1,11 +1,15 @@
+#!/bin/env python3
+
 import re
+from pwiki.wiki import Wiki
 
 class _Section:
-        def __init__(self, title:str, children:list['_Section'], depth:int, content:str="") -> None:
-                self.__title = title
+        def __init__(self, title:str, content:str, children:list=[]) -> None:
                 self.__children = children
-                self.__depth = depth
                 self.__content = content
+                self.__depth = int(title.count("=") / 2)
+                self.__title = title#.strip(" =}{")
+
         @property
         def title(self) -> str:
                 return self.__title
@@ -22,39 +26,53 @@ class _Section:
         def add_child(self, child:'_Section') -> None:
                 self.__children.append(child)
         
-        def __str__(self):
-                string = (self.depth - 1) * "|  " + self.__title
+        def count_children(self):
+                count = len(self.__children)
                 for child in self.__children:
-                        child.__str__()
-                        string += '\n' + (child.depth-1)*"|  " + child.title
+                        count += child.count_children()
+                return count
+
+        def __str__(self):
+                string = (self.depth - 1) * "|  " + self.__title + '\n'
+                for child in self.__children:
+                        string += child.__str__()
+
                 return string
         
 
 class Parser:
-        # Recursively arranges a list of wiki titles into a parent-children tree.
-        def __get_children(self, titles: list[str]) -> _Section:
-                current_section = _Section(
-                        title = titles[0].strip(" =}{"), 
-                        children = [],
-                        depth = int(titles[0].count("=") / 2)
-                )
+        def __get_children(self, section_tuples:list) -> _Section:
+                """
+                Recursively arrange a dictionary of wiki titles and their contents into a parent-children tree.
+                
+                Sections is a list of tuples which contain the section title and the text content assosiated with that title.
+                eg.
+                sections[0] = ("title","text")
+                """
+                top_section = _Section(section_tuples[0][0],section_tuples[0][1],[])
+                section_tuples.pop(0)
 
-                if len(titles) > 1:
-                        for title_index in range(1, len(titles)):
-                                section_title = titles[title_index]
+                i = 0
+                while i < len(section_tuples):
+                        section_title = section_tuples[i][0]
+                        section_depth = int(section_title.count("=") / 2)
 
-                                section_depth = int(section_title.count("=") / 2)
-
-                                if section_depth > current_section.depth:
-                                        current_section.add_child( self.__get_children(titles[title_index:]) )
-                                else:
-                                        break
+                        # check if section is direct child of top_section
+                        # if it is, don't increment i, as a section would be skipped.
+                        if section_depth == top_section.depth + 1:
+                                child = self.__get_children(section_tuples) 
+                                top_section.add_child(child)
+                                continue
                         
-                return current_section
+                        i += 1
+
+
+                return top_section
 
 
 
-        def split_sections(self, page_text:str, page_title:str) -> _Section:
+
+        def parse_page(self, page_text:str, page_title:str) -> _Section:
                 # Note: using 'title' and 'header' synonymously in comments ie. Referring to the same thing with both words.
 
                 header_matches = list( 
@@ -80,22 +98,31 @@ class Parser:
                                 headers.append(header)
                 
                 # Section contents
-                sections = {}
+                sections = []
                 for s_i in range(0, len(section_spans)):
                         start = section_spans[s_i][1]
-                        h = headers[s_i]
+                        section_title = headers[s_i]
 
                         # if at last title, where no next title to stop at:
                         if s_i + 1 >= len(section_spans):
-                                sections[h] = page_text[start :]
+                                section_content = page_text[start :]
 
                         # otherwise use the next title's beginning as stop:
                         else:
                                 end = section_spans[s_i + 1][0]
-                                sections[h] = page_text[start : end]
-
+                                section_content = page_text[start : end]
+                        
+                        sections.append( (section_title, section_content) )
 
                 # Arrange titles into a parent-child tree
-                page = self.__get_children(titles=headers)
+                page = self.__get_children(sections)
 
                 return page 
+
+if __name__ == "__main__":
+        wiki = Wiki("fi.wiktionary.org")
+        parser = Parser()
+
+        page_title = "ämpäri"
+        page = parser.parse_page(wiki.page_text(page_title),page_title)
+        print(page)
