@@ -181,7 +181,7 @@ def get_definitions(page:Section, lang:str):
         def_index = 1
         for line in def_lines:
                 # if regular relevant line
-                if line.startswith("#"):
+                if re.search("\#[^\.\:\*]",line):# line.startswith("#"):
                         newline = str(def_index) + ". " + line.removeprefix("#")
                         parsed_lines.append(newline)
                         def_index += 1
