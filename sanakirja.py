@@ -5,17 +5,21 @@ from wikiparser import WikiParser, Section
 import re
 import sys 
 import functools
+from time import sleep
+import sys
+import os
 
 word_classes = {
         "en" : ["Adjective", "Adverb", "Noun", "Verb"],
         "fi" : ["Adjektiivi", "Adverbi", "Substantiivi", "Verbi"],
-        "ja" : [""],
+        "ja" : ["noun","pron"],
         "sv" : [""]
 }
 
 supported_languages = ["en", "fi", "ja", "sv"]
 
 # lookup tables for how languages used in eg. titles are written in wikipedia in different languages.
+
 langs_in_en = {
         "en" : "English",
         "fi" : "Finnish",
@@ -105,14 +109,14 @@ def parse_en_translations(page:Section, to_lang:str) -> str:
                 for wc in word_classes["en"]:
                         wc_sect = english.find(wc)
                         if wc_sect:
-                                print(wc)
+                                #print(wc)
                                 sect = wc_sect.find("Translations")
                                 if sect:
                                         ls = sect.content.splitlines()
                                         for l in ls:
-                                                print(l)
+                                                #print(l)
                                                 if langs_in_en[to_lang] in l:
-                                                        print(l)
+                                                        #print(l)
                                                         full_str += format_en_sv_translations(l,wc) + "\n\n"
                 return full_str
         except:
@@ -165,72 +169,147 @@ def print_help_msg() -> None:
         return
 
 
-def get_definitions(page:Section, lang:str):
+def get_definitions(page:Section, lang:str) -> str:
+        # Recursive function for indents and line nums
+        def sub_defs(lines:list, self_d:int=1):
+                formatted_lines = []
+                linenum = 1
+                while len(lines) > 0:
+                        line = lines[0].strip()
+
+                        # ## -lines, ie. if sub, go down a level, recurse
+                        if re.search("^" + (self_d+1)*"#" + "[^[#\:\*].]*", line):
+                                subs = sub_defs(lines, self_d + 1)
+                                for s in subs:
+                                        formatted_lines.append(s)
+
+                        # # -lines, ie. if on same level 
+                        elif re.search("^" + (self_d)*"#" + "[^[#\:\*].]*", line):
+                                f_line = (self_d-1)*"\033[2m▏   \033[0m" + str(linenum) + "." + line.removeprefix(self_d*"#")
+                                lines.pop(0)
+                                formatted_lines.append(f_line)
+                                linenum += 1
+
+                        # #: -lines
+                        elif re.search("^" + (self_d)*"#" + "\:" + "[^[#\:\*].]*", line):
+                                f_line = (self_d)*"\033[2m▏   \033[0m" + line.removeprefix(self_d*"#" + ":")
+                                lines.pop(0)
+                                formatted_lines.append(f_line)
+
+                        # #:* -lines
+                        elif re.search("^" + (self_d)*"#" + "\*" + "[^[#\:\*].]*", line):
+                                f_line = (self_d)*"\033[2m▏   \033[0m" + line.removeprefix(self_d*"#" + "*")
+                                lines.pop(0)
+                                formatted_lines.append(f_line)
+
+                        # #:* -lines
+                        elif re.search("^" + (self_d)*"#" + "\*\:" + "[^[#\:\*].]*", line):
+                                f_line = (self_d+1)*"\033[2m▏   \033[0m" + line.removeprefix(self_d*"#" + "*:")
+                                lines.pop(0)
+                                formatted_lines.append(f_line)
+                        
+                        # if line is a header, reset linenum
+                        elif re.search("^===", line):
+                                linenum=1
+                                lines.pop(0)
+                                formatted_lines.append(line)
+
+                        # if line starts with other than '#', it doesn't need to be formatted here
+                        elif re.search("^[^#]*.*$", line):
+                                lines.pop(0)
+                                formatted_lines.append(line)
+                        
+
+                        # if line is higher level, break and return to go back up a level
+                        else:
+                                break
+
+                return formatted_lines
+
+
+
         # combine lines from all word definitions + add headers
         def_lines = []
         for wc in word_classes[lang]:
-                wc_sect = page.find(wc)
-                if wc_sect:
-                        content_lines = wc_sect.content.splitlines()
-                        def_lines.append("===" + wc)
-                        for line in content_lines:
-                                def_lines.append(line)
-
-        # strip irrelevant lines
-        parsed_lines = []
-        def_index = 1
-        for line in def_lines:
-                # if regular relevant line
-                if re.search("\#[^\.\:\*]",line):# line.startswith("#"):
-                        newline = str(def_index) + ". " + line.removeprefix("#")
-                        parsed_lines.append(newline)
-                        def_index += 1
-                # if header
-                elif line.startswith("==="):
-                        newline = "\033[1;34m" + line.removeprefix("===") + "\033[0m"
-                        parsed_lines.append("")
-                        parsed_lines.append(newline)
-                        def_index = 1
+                wc_sects = page.find_all(wc)
+                for wc_sect in wc_sects:
+                        if wc_sect:
+                                content_lines = wc_sect.content.splitlines()
+                                def_lines.append("===" + wc)
+                                for line in content_lines:
+                                        def_lines.append(line)
         
+        parsed_lines = def_lines
+
+        # format '''abc'''
+        # bold words surrounded by triple " ' "
+        line_i = 0
+        for line in parsed_lines:
+                newline = ""
+                curls = re.findall("\'{3}" + "[^'.]+" + "\'{3}", line)
+                for c in curls:
+                        new = c.strip("'")
+                        new = "\033[1m" + new + "\033[22m"
+
+                        newline = line.replace(c,new)
+                        parsed_lines[line_i] = newline
+                line_i += 1
+
         # format '[[abcd]]'
         format_squares = []
         for line in parsed_lines:
                 newline = ""
-                for word in re.split("(\ |\.|\,)", line):
+                for word in re.split("(\ |\.|\,|\;)", line):
                         # find the beginning of [[]]
                         if word.find("[[")!=-1:
                                 word = "\033[35m" + word.replace("[", "")
                         # find the end of [[]]
                         if word.find("]]")!=-1:
-                                word = word.replace("]", "") + "\033[0m"
+                                word = word.replace("]", "") + "\033[39m"
 
                         newline += word
 
                 format_squares.append(newline)
-        
+
+
         # format '{{a|b|c...}}'
-        format_curlies = []
+        line_i = 0
         for line in format_squares:
                 newline = ""
-                for word in re.split("(\ |\}\}|\{\{|\,|\.)", line):
-                        # find the beginning of {{}}
-                        if word.find("{{")!=-1:
-                                word = "\033[3;31m" + word.replace("{{", "(")
-                        # find the end of {}}
-                        if word.find("}}")!=-1:
-                                word = word.replace("}}", ")") + "\033[0m"
+                curls = re.findall("{{" + "[^{^}]+" + "}}", line)
+                for c in curls:
+                        #new = c.strip("}{ ").split("|")
+                        #print("match:", c)
+                        new = c[2:len(c)-2].split("|")
+                        # remove first two values, eg. 'a' and 'b' from {{a|b|c...}}. They often contain something like 'en'
+                        if len(new) >= 3:
+                                new.pop(0) if len(new[0]) <= 2 else 0
+                                new.pop(0) if len(new[0]) <= 2 else 0
 
-                        newline += word
+                        new = "\033[3;31m(" + ", ".join(new) + ")\033[23;39m"
 
-                format_curlies.append(newline)
+                        newline = line.replace(c,new)
+                        format_squares[line_i] = newline
+                line_i += 1
         
-                
 
-        
-        return '\n'.join(format_curlies)
+        indented_lines = []
+        indented_lines = sub_defs(format_squares)
+
+        # format headers ie. lines starting with ===:
+        parsed_lines = []
+        for line in indented_lines:
+                if line.startswith("==="):
+                        newline = "\033[1;34m" + line.removeprefix("===") + "\033[22;39m"
+                        parsed_lines.append("") if len(parsed_lines) > 0 else 0
+                        parsed_lines.append(newline)
+                else:
+                        parsed_lines.append(line)
+
+
+
+        return '\n'.join(parsed_lines)
                                 
-
-
 
 
 
@@ -266,6 +345,7 @@ def dict(args:list[str], do_formatting=True) -> int:
                 sect = page.find(sect_path)
                 if sect:
                         if do_formatting:
+                                #get_definitions(page.find(sect_path), lang)
                                 print(get_definitions(page.find(sect_path), lang))
                         else:
                                 print(page.find(sect_path).content)

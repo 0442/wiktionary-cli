@@ -7,7 +7,7 @@ class Section:
                 self.__children = children
                 self.__content = content
                 self.__depth = int(title.count("=") / 2)
-                self.__title = title.strip(" =}{")
+                self.__title = title.replace("=","").replace("}","").replace("{","")
 
         @property
         def title(self) -> str:
@@ -57,7 +57,8 @@ class Section:
 
         def find(self, section_title:str) -> 'Section':
                 """
-                Return first occurence of section with the given title.
+                Return the first occurence of a section with the given title.\n
+                Return None if no section found. 
                 """
                 matches = self.__get_sections(section_title)
                 if len(matches) == 0:
@@ -73,7 +74,7 @@ class Section:
                 return matches
 
         def __str__(self):
-                string = (self.depth - 1) * "|  " + self.__title
+                string = (self.depth - 1) * "\033[2m▏  \033[0m" + self.__title
                 for child in self.__children:
                         string += '\n' + child.__str__()
 
@@ -164,23 +165,18 @@ class WikiParser:
 
                 return page[0]
         
-        
         @property
         def page(self) -> Section:
                 return self.__page
-        
-        
 
 
 if __name__ == "__main__":
         import sys
-        if len(sys.argv) < 3:
+        stdin = sys.stdin.readlines()
+        if len(stdin) < 1:
                 exit(1)
 
-        page_text = sys.argv[1]
-        page_title = sys.argv[2]
-        parser = WikiParser()
-        page = parser.parse_page(page_text, page_title)
-        print(page)
-
-
+        page_text = '\n'.join(stdin)
+        page_title = "test"
+        parser = WikiParser(page_text, page_title)
+        print(parser.page)
