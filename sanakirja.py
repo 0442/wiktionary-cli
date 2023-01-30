@@ -12,39 +12,28 @@ import os
 word_classes = {
         "en" : ["Adjective", "Adverb", "Noun", "Verb"],
         "fi" : ["Adjektiivi", "Adverbi", "Substantiivi", "Verbi"],
-        "ja" : ["noun","pron"],
-        "sv" : [""]
 }
 
-supported_languages = ["en", "fi", "ja", "sv"]
+supported_languages = ["en", "fi"]
 
 # lookup tables for how languages used in eg. titles are written in wikipedia in different languages.
 lang_abbrev_table = {
         "en" : {
                 "en" : "English",
                 "fi" : "Finnish",
-                "ja" : "Japanese",
                 "sv" : "Swedish",
         },
 
         "fi" : {        
                 "en" : "englanti",
                 "fi" : "suomi",
-                "ja" : "japani",
                 "sv" : "ruotsi", 
-        },
-
-        "ja" : {
-                "en" : "en",
-                "fi" : "fi",
-                "ja" : "ja",
-                "sv" : "sv",
         },
 
         "sv" : {
                 "en" : "engelska",
                 "fi" : "finska",
-                "ja" : "japanska",
+                "sv" : "svenska",
         }
 }
 
@@ -52,7 +41,6 @@ lang_abbrev_table = {
 lang_in_own_lang = {
         "en" : "english",
         "fi" : "suomi",
-        "ja" : "ja",
         "sv" : "svenska",
 }
 
@@ -81,8 +69,8 @@ def format_en_sv_translations(tr_row: str, title: str) -> str:
         output_str = title + "\nFreq.\t|\tTranslation\n" + f"{8*'-'}+{5*8*'-'}\n" + output_str
         return  output_str.strip("\n")
 
-def format_fi_ja_translations(tr_row: str) -> str:
-        return f"Fancy formatting for translations from Finnish and Japanese not yet supported.\n\n{tr_row}"
+def format_fi_translations(tr_row: str) -> str:
+        return f"Fancy formatting for translations from Finnish not yet supported.\n\n{tr_row}"
 
 # Functions for getting translations from wiktionary pages of certain languages, parsed into a printable format.
 # Pages for some languages are formatted differently, thus multiple functions for supported languages are given.
@@ -102,7 +90,7 @@ def parse_fi_translations(page:Section, to_lang:str) -> str:
                         if lang_abbrev_table["fi"][to_lang] in line:
                                 tr_line += line+'\n'
 
-                return format_fi_ja_translations(tr_line)
+                return format_fi_translations(tr_line)
         except:
                 return None 
 
@@ -126,12 +114,6 @@ def parse_en_translations(page:Section, to_lang:str) -> str:
         except:
                 return None
 
-def parse_ja_translations(page:Section, to_lang:str) -> str:
-        try:
-                tr_row = page.find("").content.strip(" ")
-                return format_fi_ja_translations(tr_row)
-        except:
-                return None
 
 def parse_sv_translations(page:Section, to_lang:str) -> str:
         try:
@@ -277,8 +259,6 @@ def translate(args:list[str]) -> int:
                 tr = parse_fi_translations(page, to_lang)
         elif from_lang == "en":
                 tr = parse_en_translations(page, to_lang)
-        elif from_lang == "ja":
-                tr = parse_ja_translations(page, to_lang)
         elif from_lang == "sv":
                 tr = parse_sv_translations(page, to_lang)
 
