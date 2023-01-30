@@ -185,6 +185,7 @@ class WikiParser:
                 """
                 
                 """
+                indent_str = "▏   "
                 # Recursive function for indents and line nums
                 def sub_defs(lines:list, self_d:int=1):
                         formatted_lines = []
@@ -192,34 +193,34 @@ class WikiParser:
                         while len(lines) > 0:
                                 line = lines[0].strip()
 
-                                # ## -lines, ie. if sub, go down a level, recurse
-                                if re.search("^" + (self_d+1)*"#" + "[^[#\:\*].]*", line):
+                                # '##' -lines, ie. if sub, go down a level, recurse
+                                if re.search("^" + (self_d+1)*"#" + "[^#\:\*]+.*$", line):
                                         subs = sub_defs(lines, self_d + 1)
                                         for s in subs:
                                                 formatted_lines.append(s)
 
-                                # # -lines, ie. if on same level 
-                                elif re.search("^" + (self_d)*"#" + "[^[#\:\*].]*", line):
-                                        f_line = (self_d-1)*"\033[2m▏   \033[0m" + str(linenum) + "." + line.removeprefix(self_d*"#")
+                                # '#' -lines, ie. if on same level 
+                                elif re.search("^" + (self_d)*"#" + "[^#\:\*]+.*$", line):
+                                        f_line = (self_d-1)*("\033[2m" + indent_str + "\033[0m") + str(linenum) + "." + line.removeprefix(self_d*"#")
                                         lines.pop(0)
                                         formatted_lines.append(f_line)
                                         linenum += 1
 
-                                # #: -lines
-                                elif re.search("^" + (self_d)*"#" + "\:" + "[^[#\:\*].]*", line):
-                                        f_line = (self_d)*"\033[2m▏   \033[0m" + line.removeprefix(self_d*"#" + ":")
+                                # '#:' -lines
+                                elif re.search("^" + (self_d)*"#" + "\:" + "[^#\:\*]+.*$", line):
+                                        f_line = (self_d)*("\033[2m" + indent_str + "\033[0m") + line.removeprefix(self_d*"#" + ":")
                                         lines.pop(0)
                                         formatted_lines.append(f_line)
 
-                                # #:* -lines
-                                elif re.search("^" + (self_d)*"#" + "\*" + "[^[#\:\*].]*", line):
-                                        f_line = (self_d)*"\033[2m▏   \033[0m" + line.removeprefix(self_d*"#" + "*")
+                                # '#*' -lines
+                                elif re.search("^" + (self_d)*"#" + "\*" + "[^#\:\*]+.*$", line):
+                                        f_line = (self_d)*("\033[2m" + indent_str + "\033[0m") + line.removeprefix(self_d*"#" + "*")
                                         lines.pop(0)
                                         formatted_lines.append(f_line)
 
-                                # #:* -lines
-                                elif re.search("^" + (self_d)*"#" + "\*\:" + "[^[#\:\*].]*", line):
-                                        f_line = (self_d+1)*"\033[2m▏   \033[0m" + line.removeprefix(self_d*"#" + "*:")
+                                # '#:*' -lines
+                                elif re.search("^" + (self_d)*"#" + "\*\:" + "[^#\:\*]+.*$", line):
+                                        f_line = (self_d+1)*("\033[2m" + indent_str + "\033[0m") + line.removeprefix(self_d*"#" + "*:")
                                         lines.pop(0)
                                         formatted_lines.append(f_line)
                                 
@@ -230,7 +231,7 @@ class WikiParser:
                                         formatted_lines.append(line)
 
                                 # if line starts with other than '#', it doesn't need to be formatted here
-                                elif re.search("^[^#]*.*$", line):
+                                elif re.search("^[^#]*$", line):
                                         lines.pop(0)
                                         formatted_lines.append(line)
                                 
@@ -257,7 +258,12 @@ class WikiParser:
                 
                 parsed_lines = def_lines
                 """
-                parsed_lines = self.page.find(section_name).content.splitlines()
+                section = self.page.find(section_name)
+                if not section:
+                        return None
+                parsed_lines = section.content.splitlines()
+                # add section header
+                parsed_lines.insert(0, "\033[1;34m" + section.title + "\033[22;39m")
 
                 # format '''abc'''
                 # bold words surrounded by triple " ' "
@@ -314,19 +320,7 @@ class WikiParser:
                 indented_lines = []
                 indented_lines = sub_defs(format_squares)
 
-                # format headers ie. lines starting with ===:
-                parsed_lines = []
-                for line in indented_lines:
-                        if line.startswith("==="):
-                                newline = "\033[1;34m" + line.removeprefix("===") + "\033[22;39m"
-                                parsed_lines.append("") if len(parsed_lines) > 0 else 0
-                                parsed_lines.append(newline)
-                        else:
-                                parsed_lines.append(line)
-
-
-
-                return '\n'.join(parsed_lines)
+                return '\n'.join(indented_lines)
         
         @property
         def page(self) -> Section:
