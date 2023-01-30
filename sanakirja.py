@@ -45,7 +45,7 @@ lang_in_own_lang = {
 }
 
 
-# Pages for some languages are formatted differently, thus multiple functions for parsing supported languages are given.
+# Pages for some languages are formatted differently, thus multiple functions for formatting are given.
 def format_en_sv_translations(tr_row: str, title: str) -> str:
         output_str = ""
         split = tr_row.split(": ")
@@ -138,18 +138,15 @@ def print_supported_languages() -> None:
         return
 
 def print_help_msg() -> None:
-        print("Usage: sanakirja [OPTION...] ARGS...")
-        print("   or: sanakirja [OPTION...] -t TRANSLATE_FROM TRANSLATE_TO WORD")
-        print("   or: sanakirja [OPTION...] -d LANGUAGE WORD [SECTION]")
+        print("Wiktionary-cli.")
         print("")
-        print("Modes:")
-        print("  -d, --dictionary\tget dictionary entry for word in given language")
-        print("  -t, --translate \ttranslate word to given language")
-        print("  -s, --synonyms  \tget synonyms for word in given language")
-        print("  -h, --help      \tprint this help message")
+        print("Usage:")
+        print("  sanakirja dictionary [options] <dict-lang> <word> [section-path]")
+        print("  sanakirja translate [options] <from-lang> <to-lang> <word>")
         print("")
         print("Options:")
-        print("  -r, --raw       \tdon't format output")
+        print("  -h --help \tShow this screen.")
+        print("  -r --raw  \tDon't format output.")
         print_supported_languages()
 
         return
@@ -278,9 +275,14 @@ def main() -> int:
                 print_help_msg()
                 exit(1)
 
+        # print help message
+        if "-h" in options or "--help" in options:
+                print_help_msg()
+                return 0
+
         # check and run function for given mode of operation option 
-        translate_option_names = ["-t", "-tr", "-trans", "-translate"]
-        dict_option_names = ["-d","-dict","-dictionary"]
+        translate_option_names = ["-t", "--tr", "--translate"]
+        dict_option_names = ["-d","--dict","--dictionary"]
         # iter all options and find the mode of operation option
         for opt in options:
                 # run in dictionary mode
@@ -291,10 +293,6 @@ def main() -> int:
                 elif opt in translate_option_names:
                         return translate(other_args)
 
-                # print help message
-                elif opt == "-h" or opt == "--help":
-                        print_help_msg()
-                        return 0
                 else:
                         print_help_msg()
                         return 1
