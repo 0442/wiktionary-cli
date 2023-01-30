@@ -141,8 +141,8 @@ def print_help_msg() -> None:
         print("Wiktionary-cli.")
         print("")
         print("Usage:")
-        print("  sanakirja dictionary [options] <dict-lang> <word> [section-path]")
-        print("  sanakirja translate [options] <from-lang> <to-lang> <word>")
+        print("  sanakirja dictionary|dict|d <lang> <word> [<section-path>|definitions|defs]")
+        print("  sanakirja translate|tr|t <from-lang> <to-lang> <word>")
         print("")
         print("Options:")
         print("  -h --help \tShow this screen.")
@@ -165,7 +165,6 @@ def dict(args:list[str], do_formatting=True) -> int:
                 sect_path = args[2]
 
 
-
         # check if user gave a usable language
         if lang not in supported_languages:
                 print(f"Unsupported language: \"{lang}\"")
@@ -186,8 +185,11 @@ def dict(args:list[str], do_formatting=True) -> int:
 
         # if a section is given, print that section (or a group of sections, if sect_path is a key word associated with some arbitrary group of sections, eg. 'definitions', which matches Nouns, Verbs, etc..)
         if sect_path:
-                if sect_path.lower() == "definitions":
-                        pass 
+                if sect_path.lower() == "definitions" or sect_path.lower() == "defs":
+                        for wc in word_classes[lang]:
+                                sect_str = parser.format_section_content(wc, lang)
+                                print( sect_str+'\n\n' if sect_str is not None else '', end="")
+
                 else:
                         sect = page.find(sect_path)
                         if sect:
@@ -244,14 +246,6 @@ def translate(args:list[str]) -> int:
         parser = WikiParser(page_text, word)
         page = parser.page
 
-        """
-        # check if found page is for a word from the intended language
-        page_language = titles[0]
-        if page_language != lang_in_own_lang[from_lang]:
-                word_not_found(word, from_lang)
-                return 1
-        """
-
         if from_lang == "fi":
                 tr = parse_fi_translations(page, to_lang)
         elif from_lang == "en":
@@ -268,10 +262,16 @@ def translate(args:list[str]) -> int:
 
 
 def main() -> int:
-        options = [arg for arg in sys.argv if arg.startswith("-")]
-        other_args = [arg for arg in sys.argv[1:] if arg not in options]
+        # extract options and other, positional arguments
+        options = [opt for opt in sys.argv if opt.startswith("-")]
+        positional_args = [arg for arg in sys.argv[1:] if arg not in options] 
 
-        if len(options) < 1:
+        # check for invalid options
+        valid_options = ["-r", "--raw", "-h", "--help"]
+        invalid_opts  = [opt for opt in options if opt not in valid_options]
+        print( f"Invalid options: { ', '.join() }.\n" ) if len(invalid_opts) > 0 else None
+
+        if len(positional_args) < 3:
                 print_help_msg()
                 exit(1)
 
@@ -280,22 +280,20 @@ def main() -> int:
                 print_help_msg()
                 return 0
 
-        # check and run function for given mode of operation option 
-        translate_option_names = ["-t", "--tr", "--translate"]
-        dict_option_names = ["-d","--dict","--dictionary"]
-        # iter all options and find the mode of operation option
-        for opt in options:
-                # run in dictionary mode
-                if opt in dict_option_names:
-                        return dict(other_args, do_formatting = (False if "-r" in options else True))
+        # check and run function for given mode
+        alt_translate_mode_names = ["t", "tr", "translate"]
+        alt_dict_mode_names = ["d", "dict", "dictionary"]
 
-                # run in translator mode
-                elif opt in translate_option_names:
-                        return translate(other_args)
+        # run in dictionary mode
+        if positional_args[0] in alt_dict_mode_names:
+                return dict(positional_args[1:], do_formatting = (False if "-r" in options or "--raw" in options else True))
 
-                else:
-                        print_help_msg()
-                        return 1
+        # run in translator mode
+        elif positional_args[0] in alt_translate_mode_names:
+                return translate(positional_args[1:])
+        else:
+                print_help_msg()
+                return 1
 
 
 if __name__ == "__main__":

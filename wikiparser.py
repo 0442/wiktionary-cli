@@ -244,20 +244,6 @@ class WikiParser:
 
 
 
-                """
-                # Find and combine lines from word definitions(discard other sections' lines) + add headers
-                def_lines = []
-                for wc in word_classes[lang]:
-                        wc_sects = page.find_all(wc)
-                        for wc_sect in wc_sects:
-                                if wc_sect:
-                                        content_lines = wc_sect.content.splitlines()
-                                        def_lines.append("===" + wc)
-                                        for line in content_lines:
-                                                def_lines.append(line)
-                
-                parsed_lines = def_lines
-                """
                 section = self.page.find(section_name)
                 if not section:
                         return None
@@ -280,6 +266,7 @@ class WikiParser:
                         line_i += 1
 
                 # format '[[abcd]]'
+                # doesn't handle nested square brackets. 
                 format_squares = []
                 for line in parsed_lines:
                         newline = ""
