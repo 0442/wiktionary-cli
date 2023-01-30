@@ -19,31 +19,35 @@ word_classes = {
 supported_languages = ["en", "fi", "ja", "sv"]
 
 # lookup tables for how languages used in eg. titles are written in wikipedia in different languages.
+lang_abbrev_table = {
+        "en" : {
+                "en" : "English",
+                "fi" : "Finnish",
+                "ja" : "Japanese",
+                "sv" : "Swedish",
+        },
 
-langs_in_en = {
-        "en" : "English",
-        "fi" : "Finnish",
-        "ja" : "Japanese",
-        "sv" : "Swedish",
+        "fi" : {        
+                "en" : "englanti",
+                "fi" : "suomi",
+                "ja" : "japani",
+                "sv" : "ruotsi", 
+        },
+
+        "ja" : {
+                "en" : "en",
+                "fi" : "fi",
+                "ja" : "ja",
+                "sv" : "sv",
+        },
+
+        "sv" : {
+                "en" : "engelska",
+                "fi" : "finska",
+                "ja" : "japanska",
+        }
 }
-langs_in_fi = {
-        "en" : "englanti",
-        "fi" : "suomi",
-        "ja" : "japani",
-        "sv" : "ruotsi",
-}
-langs_in_ja = {
-        "en" : "en",
-        "fi" : "fi",
-        "ja" : "ja",
-        "sv" : "sv",
-}
-langs_in_sv = {
-        "en" : "engelska",
-        "fi" : "finska",
-        "ja" : "japanska",
-        "sv" : "svenska",
-}
+
 # for convenience
 lang_in_own_lang = {
         "en" : "english",
@@ -95,7 +99,7 @@ def parse_fi_translations(page:Section, to_lang:str) -> str:
 
                 tr_line = ""
                 for line in translations:
-                        if langs_in_fi[to_lang] in line:
+                        if lang_abbrev_table["fi"][to_lang] in line:
                                 tr_line += line+'\n'
 
                 return format_fi_ja_translations(tr_line)
@@ -115,7 +119,7 @@ def parse_en_translations(page:Section, to_lang:str) -> str:
                                         ls = sect.content.splitlines()
                                         for l in ls:
                                                 #print(l)
-                                                if langs_in_en[to_lang] in l:
+                                                if lang_abbrev_table["en"][to_lang] in l:
                                                         #print(l)
                                                         full_str += format_en_sv_translations(l,wc) + "\n\n"
                 return full_str
@@ -140,11 +144,11 @@ def parse_sv_translations(page:Section, to_lang:str) -> str:
 
 # Functions for printing some output
 def word_not_found(word:str, search_lang:str) -> None:
-        print(f"Cannot find a wiktionary entry for '{word}' in {langs_in_en[search_lang]}.")
+        print(f"Cannot find a wiktionary entry for '{word}' in {lang_abbrev_table['en'][search_lang]}.")
         return
 
 def print_supported_languages() -> None:
-        langs = [f"  {lang}\t{langs_in_en[lang]}" for lang in supported_languages]
+        langs = [f"  {lang}\t{lang_abbrev_table['en'][lang]}" for lang in supported_languages]
         print()
         print("Supported languages:")
         print("\n".join(langs))
@@ -169,163 +173,24 @@ def print_help_msg() -> None:
         return
 
 
-def get_definitions(page:Section, lang:str) -> str:
-        # Recursive function for indents and line nums
-        def sub_defs(lines:list, self_d:int=1):
-                formatted_lines = []
-                linenum = 1
-                while len(lines) > 0:
-                        line = lines[0].strip()
-
-                        # ## -lines, ie. if sub, go down a level, recurse
-                        if re.search("^" + (self_d+1)*"#" + "[^[#\:\*].]*", line):
-                                subs = sub_defs(lines, self_d + 1)
-                                for s in subs:
-                                        formatted_lines.append(s)
-
-                        # # -lines, ie. if on same level 
-                        elif re.search("^" + (self_d)*"#" + "[^[#\:\*].]*", line):
-                                f_line = (self_d-1)*"\033[2m▏   \033[0m" + str(linenum) + "." + line.removeprefix(self_d*"#")
-                                lines.pop(0)
-                                formatted_lines.append(f_line)
-                                linenum += 1
-
-                        # #: -lines
-                        elif re.search("^" + (self_d)*"#" + "\:" + "[^[#\:\*].]*", line):
-                                f_line = (self_d)*"\033[2m▏   \033[0m" + line.removeprefix(self_d*"#" + ":")
-                                lines.pop(0)
-                                formatted_lines.append(f_line)
-
-                        # #:* -lines
-                        elif re.search("^" + (self_d)*"#" + "\*" + "[^[#\:\*].]*", line):
-                                f_line = (self_d)*"\033[2m▏   \033[0m" + line.removeprefix(self_d*"#" + "*")
-                                lines.pop(0)
-                                formatted_lines.append(f_line)
-
-                        # #:* -lines
-                        elif re.search("^" + (self_d)*"#" + "\*\:" + "[^[#\:\*].]*", line):
-                                f_line = (self_d+1)*"\033[2m▏   \033[0m" + line.removeprefix(self_d*"#" + "*:")
-                                lines.pop(0)
-                                formatted_lines.append(f_line)
-                        
-                        # if line is a header, reset linenum
-                        elif re.search("^===", line):
-                                linenum=1
-                                lines.pop(0)
-                                formatted_lines.append(line)
-
-                        # if line starts with other than '#', it doesn't need to be formatted here
-                        elif re.search("^[^#]*.*$", line):
-                                lines.pop(0)
-                                formatted_lines.append(line)
-                        
-
-                        # if line is higher level, break and return to go back up a level
-                        else:
-                                break
-
-                return formatted_lines
-
-
-
-        # combine lines from all word definitions + add headers
-        def_lines = []
-        for wc in word_classes[lang]:
-                wc_sects = page.find_all(wc)
-                for wc_sect in wc_sects:
-                        if wc_sect:
-                                content_lines = wc_sect.content.splitlines()
-                                def_lines.append("===" + wc)
-                                for line in content_lines:
-                                        def_lines.append(line)
-        
-        parsed_lines = def_lines
-
-        # format '''abc'''
-        # bold words surrounded by triple " ' "
-        line_i = 0
-        for line in parsed_lines:
-                newline = ""
-                curls = re.findall("\'{3}" + "[^'.]+" + "\'{3}", line)
-                for c in curls:
-                        new = c.strip("'")
-                        new = "\033[1m" + new + "\033[22m"
-
-                        newline = line.replace(c,new)
-                        parsed_lines[line_i] = newline
-                line_i += 1
-
-        # format '[[abcd]]'
-        format_squares = []
-        for line in parsed_lines:
-                newline = ""
-                for word in re.split("(\ |\.|\,|\;)", line):
-                        # find the beginning of [[]]
-                        if word.find("[[")!=-1:
-                                word = "\033[35m" + word.replace("[", "")
-                        # find the end of [[]]
-                        if word.find("]]")!=-1:
-                                word = word.replace("]", "") + "\033[39m"
-
-                        newline += word
-
-                format_squares.append(newline)
-
-
-        # format '{{a|b|c...}}'
-        line_i = 0
-        for line in format_squares:
-                newline = ""
-                curls = re.findall("{{" + "[^{^}]+" + "}}", line)
-                for c in curls:
-                        #new = c.strip("}{ ").split("|")
-                        #print("match:", c)
-                        new = c[2:len(c)-2].split("|")
-                        # remove first two values, eg. 'a' and 'b' from {{a|b|c...}}. They often contain something like 'en'
-                        if len(new) >= 3:
-                                new.pop(0) if len(new[0]) <= 2 else 0
-                                new.pop(0) if len(new[0]) <= 2 else 0
-
-                        new = "\033[3;31m(" + ", ".join(new) + ")\033[23;39m"
-
-                        newline = line.replace(c,new)
-                        format_squares[line_i] = newline
-                line_i += 1
-        
-
-        indented_lines = []
-        indented_lines = sub_defs(format_squares)
-
-        # format headers ie. lines starting with ===:
-        parsed_lines = []
-        for line in indented_lines:
-                if line.startswith("==="):
-                        newline = "\033[1;34m" + line.removeprefix("===") + "\033[22;39m"
-                        parsed_lines.append("") if len(parsed_lines) > 0 else 0
-                        parsed_lines.append(newline)
-                else:
-                        parsed_lines.append(line)
-
-
-
-        return '\n'.join(parsed_lines)
-                                
-
-
 
 def dict(args:list[str], do_formatting=True) -> int:
         if len(args) < 2:
                 print_help_msg()
                 exit(1)
-
+        
         lang = args[0]
         word = args[1]
+        sect_path = None
+        if len(args) >= 3:
+                sect_path = args[2]
+
 
 
         # check if user gave a usable language
         if lang not in supported_languages:
                 print(f"Unsupported language: \"{lang}\"")
-                print_supported_languages()
+                #print_supported_languages()
                 return 1
 
         # form wiki link and object from chosen language
@@ -340,18 +205,22 @@ def dict(args:list[str], do_formatting=True) -> int:
         parser = WikiParser(page_text,word)
         page = parser.page
 
-        if len(args) >= 3:
-                sect_path = args[2]
-                sect = page.find(sect_path)
-                if sect:
-                        if do_formatting:
-                                #get_definitions(page.find(sect_path), lang)
-                                print(get_definitions(page.find(sect_path), lang))
-                        else:
-                                print(page.find(sect_path).content)
+        # if a section is given, print that section (or a group of sections, if sect_path is a key word associated with some arbitrary group of sections, eg. 'definitions', which matches Nouns, Verbs, etc..)
+        if sect_path:
+                if sect_path.lower() == "definitions":
+                        pass 
                 else:
-                        print(f"No section '{args[2]}'.")
+                        sect = page.find(sect_path)
+                        if sect:
+                                if do_formatting:
+                                        #get_definitions(page.find(sect_path), lang)
+                                        print(parser.format_section_content(sect_path, lang))
+                                else:
+                                        print(page.find(sect_path).content)
+                        else:
+                                print(f"No section '{args[2]}'.")
 
+        # if no section given, print whole page(either page.__str__() or the raw text, if command was run with option '-r' )
         else:
                 if do_formatting:
                         print(page)
@@ -381,7 +250,7 @@ def translate(args:list[str]) -> int:
                         print(f" \"{to_lang}\"",end="")
                 print()
 
-                print_supported_languages()
+                #print_supported_languages()
                 return 1
 
         # form wiki link and object from chosen language
@@ -416,7 +285,7 @@ def translate(args:list[str]) -> int:
         if tr:
                 print(tr)
         else:
-                print(f"No translation from {langs_in_en[from_lang]} to {langs_in_en[to_lang]} found for \"{word}\".")
+                print(f"No translation from {lang_abbrev_table['en'][from_lang]} to {lang_abbrev_table['en'][to_lang]} found for \"{word}\".")
 
         return 0
 
