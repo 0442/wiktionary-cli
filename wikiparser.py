@@ -5,7 +5,6 @@ import re
 word_classes = {
         "en" : ["Adjective", "Adverb", "Noun", "Verb"],
         "fi" : ["Adjektiivi", "Adverbi", "Substantiivi", "Verbi"],
-        "ja" : ["noun","pron"],
         "sv" : [""]
 }
 
