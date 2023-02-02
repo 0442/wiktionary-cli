@@ -3,9 +3,16 @@
 import re
 
 word_classes = {
-        "en" : ["Adjective", "Adverb", "Noun", "Verb"],
-        "fi" : ["Adjektiivi", "Adverbi", "Substantiivi", "Verbi"],
-        "sv" : [""]
+        "en" : [
+                "Adjective", "Adverb", "Article", "Conjuction", "Noun", "Numeral", 
+                "Adposition", "Preposition", "Postposition", 
+                "Participle", "Pronoun", "Verb"
+        ],
+        "fi" : ["Adjektiivi", "Adverbi", "Artikkeli", "Konjunktio", "Substantiivi", "Numeraali", 
+                "Adpositio", "Prepositio", "Postpositio", 
+                "Partisiippi", "Pronomini", "Verbi"
+        ],
+        "sv" : [""],
 }
 
 class Section:
@@ -163,7 +170,7 @@ class WikiParser:
                 sections = []
                 for s_i in range(0, len(section_spans)):
                         start = section_spans[s_i][1]
-                        section_title = titles[s_i]
+                        section_title = titles[s_i].strip()
 
                         # if at last title, where no next title to stop at:
                         if s_i + 1 >= len(section_spans):
@@ -208,19 +215,19 @@ class WikiParser:
 
                                 # '#:' -lines
                                 elif re.search("^" + (self_d)*"#" + "\:" + "[^#\:\*]+.*$", line):
-                                        f_line = (self_d)*("\033[2m" + indent_str + "\033[0m") + line.removeprefix(self_d*"#" + ":")
+                                        f_line = (self_d)*("\033[2m"+indent_str+"\033[0m") + line.removeprefix(self_d*"#" + ":")
                                         lines.pop(0)
                                         formatted_lines.append(f_line)
 
                                 # '#*' -lines
                                 elif re.search("^" + (self_d)*"#" + "\*" + "[^#\:\*]+.*$", line):
-                                        f_line = (self_d)*("\033[2m" + indent_str + "\033[0m") + line.removeprefix(self_d*"#" + "*")
+                                        f_line = (self_d)*("\033[2m"+indent_str+"\033[0m") + line.removeprefix(self_d*"#" + "*")
                                         lines.pop(0)
                                         formatted_lines.append(f_line)
 
                                 # '#:*' -lines
                                 elif re.search("^" + (self_d)*"#" + "\*\:" + "[^#\:\*]+.*$", line):
-                                        f_line = (self_d+1)*("\033[2m" + indent_str + "\033[0m") + line.removeprefix(self_d*"#" + "*:")
+                                        f_line = (self_d+1)*("\033[2m"+indent_str+"\033[0m") + line.removeprefix(self_d*"#" + "*:")
                                         lines.pop(0)
                                         formatted_lines.append(f_line)
                                 
@@ -317,16 +324,9 @@ class WikiParser:
 if __name__ == "__main__":
         import sys
         from pwiki.wiki import Wiki
-
-        stdin = sys.stdin.readlines()
-        if len(stdin) > 0:
-            page_text = '\n'.join(stdin)
-            page_title = "test"
-            parser = WikiParser(page_text, page_title)
-            print(parser.page)
-
-        else:
-            wiki = Wiki("en.wikipedia.org")
-            wiki.page_text(sys.argv[1])
-
+        exit(1) if len(sys.argv) < 2 else None
+        wiki = Wiki("en.wikipedia.org")
+        pt = wiki.page_text(sys.argv[1])  
+        parser = WikiParser(pt, sys.argv[1])
+        print("en.wikpedia.org\n", parser.format_section_content(sys.argv[1], "en"))
         exit(0)

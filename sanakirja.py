@@ -2,6 +2,7 @@
 
 from pwiki.wiki import Wiki
 from wikiparser import WikiParser, Section
+import wikiparser
 import re
 import sys 
 import functools
@@ -10,13 +11,21 @@ import sys
 import os
 
 word_classes = {
-        "en" : ["Adjective", "Adverb", "Noun", "Verb"],
-        "fi" : ["Adjektiivi", "Adverbi", "Substantiivi", "Verbi"],
+        "en" : [
+                "Adjective", "Adverb", "Article", "Conjuction", "Noun", "Numeral", 
+                "Adposition", "Preposition", "Postposition", 
+                "Participle", "Pronoun", "Verb"
+        ],
+        "fi" : ["Adjektiivi", "Adverbi", "Artikkeli", "Konjunktio", "Substantiivi", "Numeraali", 
+                "Adpositio", "Prepositio", "Postpositio", 
+                "Partisiippi", "Pronomini", "Verbi"
+        ],
+        "sv" : [""],
 }
 
 supported_languages = ["en", "fi"]
 
-# lookup tables for how languages used in eg. titles are written in wikipedia in different languages.
+# lookup tables for how languages used in e.g. titles are written in wikipedia in different languages.
 lang_abbrev_table = {
         "en" : {
                 "en" : "English",
@@ -143,6 +152,7 @@ def print_help_msg() -> None:
         print("Usage:")
         print("  sanakirja dictionary|dict|d <lang> <word> [<section-path>|definitions|defs]")
         print("  sanakirja translate|tr|t <from-lang> <to-lang> <word>")
+        print("  sanakirja w|wiki|wikipedia <lang> <title> [<section-path>]")
         print("")
         print("Options:")
         print("  -h --help \tShow this screen.")
@@ -151,7 +161,53 @@ def print_help_msg() -> None:
 
         return
 
+def wiki(args:list[str], do_formatting=True) -> int:
+        if len(args) < 2:
+                print_help_msg()
+                exit(1)
+        
+        lang = args[0]
+        title = args[1]
+        sect_path = None
+        if len(args) >= 3:
+                sect_path = args[2]
+        
+        # check if user gave a usable language
+        if lang not in supported_languages:
+                print(f"Unsupported language: \"{lang}\"")
+                #print_supported_languages()
+                return 1
 
+
+        wiki = Wiki(f'{lang}.wikipedia.org')
+        # check if page exists
+        if not wiki.exists(title):
+                word_not_found(title, lang)
+                return 1
+        
+        page_text = wiki.page_text(title)
+        parser = WikiParser(page_text,title)
+        page = parser.page
+
+
+        if sect_path:
+                sect = page.find(sect_path)
+                if sect:
+                        if do_formatting:
+                                print(parser.format_section_content(sect_path, lang))
+                        else:
+                                print(page.find(sect_path).content)
+                else:
+                        print(f"No section '{args[2]}'.")
+                        return 0
+        # if no section given, print page (page.__str__(), page's structure)
+        else:
+                if do_formatting:
+                        print(page)
+                else:
+                        print(page_text)
+
+        return 0
 
 def dict(args:list[str], do_formatting=True) -> int:
         if len(args) < 2:
@@ -163,7 +219,6 @@ def dict(args:list[str], do_formatting=True) -> int:
         sect_path = None
         if len(args) >= 3:
                 sect_path = args[2]
-
 
         # check if user gave a usable language
         if lang not in supported_languages:
@@ -183,7 +238,7 @@ def dict(args:list[str], do_formatting=True) -> int:
         parser = WikiParser(page_text,word)
         page = parser.page
 
-        # if a section is given, print that section (or a group of sections, if sect_path is a key word associated with some arbitrary group of sections, eg. 'definitions', which matches Nouns, Verbs, etc..)
+        # if a section is given, print that section (or a group of sections, if sect_path is a key word associated with some arbitrary group of sections, e.g. 'definitions', which matches Nouns, Verbs, etc..)
         if sect_path:
                 if sect_path.lower() == "definitions" or sect_path.lower() == "defs":
                         for wc in word_classes[lang]:
@@ -200,6 +255,7 @@ def dict(args:list[str], do_formatting=True) -> int:
                                         print(page.find(sect_path).content)
                         else:
                                 print(f"No section '{args[2]}'.")
+                                return 1
 
         # if no section given, print whole page(either page.__str__() or the raw text, if command was run with option '-r' )
         else:
@@ -281,16 +337,19 @@ def main() -> int:
                 return 0
 
         # check and run function for given mode
-        alt_translate_mode_names = ["t", "tr", "translate"]
-        alt_dict_mode_names = ["d", "dict", "dictionary"]
+        translate_mode_names = ["t", "tr", "translate"]
+        dict_mode_names = ["d", "dict", "dictionary"]
+        wiki_mode_names = ["w", "wiki", "wikipedia"]
 
         # run in dictionary mode
-        if positional_args[0] in alt_dict_mode_names:
+        if positional_args[0] in dict_mode_names:
                 return dict(positional_args[1:], do_formatting = (False if "-r" in options or "--raw" in options else True))
-
         # run in translator mode
-        elif positional_args[0] in alt_translate_mode_names:
+        elif positional_args[0] in translate_mode_names:
                 return translate(positional_args[1:])
+        # run in wikipedia mode 
+        elif positional_args[0] in wiki_mode_names:
+                return wiki(positional_args[1:])
         else:
                 print_help_msg()
                 return 1
