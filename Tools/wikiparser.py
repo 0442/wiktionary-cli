@@ -96,10 +96,11 @@ class Section:
                 matches = self.__get_sections(section_title)
                 return matches
 
-        def __str__(self):
-                string = (self.depth - 1) * "\033[2m▏  \033[0m" + self.__title
+        def __str__(self, relative_depth:int=1):
+                #string = (self.depth - 1) * "\033[2m▏  \033[0m" + self.__title
+                string = (relative_depth-1) * "\033[2m▏  \033[0m" + self.__title
                 for child in self.__children:
-                        string += '\n' + child.__str__()
+                        string += '\n' + child.__str__(relative_depth=relative_depth+1)
 
                 return string
         
@@ -108,7 +109,7 @@ class WikiParser:
         def __init__(self, page_text:str, page_title:str) -> None:
                 self.__page_text = page_text
                 self.__page_title = page_title
-                self.__page = self.__parse_page()
+                self.__page_root_section = self.__parse_page()
 
         def __get_children(self, section_tuples:list, child_depth:int=1) -> Section:
                 """
@@ -184,141 +185,14 @@ class WikiParser:
                         sections.append( (section_title, section_content) )
 
                 # Arrange titles into a parent-child tree
-                page = self.__get_children(sections)
+                page_root_section = self.__get_children(sections)
 
-                return page[0]
+                return page_root_section[0]
         
-        def format_section_content(self, section_name:str, lang:str) -> str:
-                """
-                
-                """
-                indent_str = "▏   "
-                # Recursive function for indents and line nums
-                def sub_defs(lines:list, self_d:int=1):
-                        formatted_lines = []
-                        linenum = 1
-                        while len(lines) > 0:
-                                line = lines[0].strip()
-
-                                # '##' -lines, ie. if sub, go down a level, recurse
-                                if re.search("^" + (self_d+1)*"#" + "[^#\:\*]+.*$", line):
-                                        subs = sub_defs(lines, self_d + 1)
-                                        for s in subs:
-                                                formatted_lines.append(s)
-
-                                # '#' -lines, ie. if on same level 
-                                elif re.search("^" + (self_d)*"#" + "[^#\:\*]+.*$", line):
-                                        f_line = (self_d-1)*("\033[2m" + indent_str + "\033[0m") + str(linenum) + "." + line.removeprefix(self_d*"#")
-                                        lines.pop(0)
-                                        formatted_lines.append(f_line)
-                                        linenum += 1
-
-                                # '#:' -lines
-                                elif re.search("^" + (self_d)*"#" + "\:" + "[^#\:\*]+.*$", line):
-                                        f_line = (self_d)*("\033[2m"+indent_str+"\033[0m") + line.removeprefix(self_d*"#" + ":")
-                                        lines.pop(0)
-                                        formatted_lines.append(f_line)
-
-                                # '#*' -lines
-                                elif re.search("^" + (self_d)*"#" + "\*" + "[^#\:\*]+.*$", line):
-                                        f_line = (self_d)*("\033[2m"+indent_str+"\033[0m") + line.removeprefix(self_d*"#" + "*")
-                                        lines.pop(0)
-                                        formatted_lines.append(f_line)
-
-                                # '#:*' -lines
-                                elif re.search("^" + (self_d)*"#" + "\*\:" + "[^#\:\*]+.*$", line):
-                                        f_line = (self_d+1)*("\033[2m"+indent_str+"\033[0m") + line.removeprefix(self_d*"#" + "*:")
-                                        lines.pop(0)
-                                        formatted_lines.append(f_line)
-                                
-                                # if line is a header, reset linenum
-                                elif re.search("^===", line):
-                                        linenum=1
-                                        lines.pop(0)
-                                        formatted_lines.append(line)
-
-                                # if line starts with other than '#', it doesn't need to be formatted here
-                                elif re.search("^[^#]*$", line):
-                                        lines.pop(0)
-                                        formatted_lines.append(line)
-                                
-
-                                # if line is higher level, break and return to go back up a level
-                                else:
-                                        break
-
-                        return formatted_lines
-
-
-
-                section = self.page.find(section_name)
-                if not section:
-                        return None
-                parsed_lines = section.content.splitlines()
-                # add section header
-                parsed_lines.insert(0, "\033[1;34m" + section.title + "\033[22;39m")
-
-                # format '''abc'''
-                # bold words surrounded by triple " ' "
-                line_i = 0
-                for line in parsed_lines:
-                        newline = ""
-                        curls = re.findall("\'{3}" + "[^'.]+" + "\'{3}", line)
-                        for c in curls:
-                                new = c.strip("'")
-                                new = "\033[1m" + new + "\033[22m"
-
-                                newline = line.replace(c,new)
-                                parsed_lines[line_i] = newline
-                        line_i += 1
-
-                # format '[[abcd]]'
-                # doesn't handle nested square brackets. 
-                format_squares = []
-                for line in parsed_lines:
-                        newline = ""
-                        for word in re.split("(\ |\.|\,|\;)", line):
-                                # find the beginning of [[]]
-                                if word.find("[[")!=-1:
-                                        word = "\033[35m" + word.replace("[", "")
-                                # find the end of [[]]
-                                if word.find("]]")!=-1:
-                                        word = word.replace("]", "") + "\033[39m"
-
-                                newline += word
-
-                        format_squares.append(newline)
-
-
-                # format '{{a|b|c...}}'
-                # doesn't handle nested curly brackets. 
-                line_i = 0
-                for line in format_squares:
-                        newline = ""
-                        curls = re.findall("{{" + "[^}{]+" + "}}", line)
-                        for c in curls:
-                                #new = c.strip("}{ ").split("|")
-                                new = c[2:len(c)-2].split("|")
-                                # remove first two values, eg. 'a' and 'b' from {{a|b|c...}}. They often contain something like 'en'
-                                if len(new) >= 3:
-                                        new.pop(0) if len(new[0]) <= 2 else 0
-                                        new.pop(0) if len(new[0]) <= 2 else 0
-
-                                new = "\033[3;31m(" + ", ".join(new) + ")\033[23;39m"
-
-                                newline = line.replace(c,new)
-                                format_squares[line_i] = newline
-                        line_i += 1
-                
-
-                indented_lines = []
-                indented_lines = sub_defs(format_squares)
-
-                return '\n'.join(indented_lines)
         
         @property
         def page(self) -> Section:
-                return self.__page
+                return self.__page_root_section
 
 
 if __name__ == "__main__":
