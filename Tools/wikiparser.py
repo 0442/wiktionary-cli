@@ -1,19 +1,4 @@
-#!/bin/env python3
-
 import re
-
-word_classes = {
-        "en" : [
-                "Adjective", "Adverb", "Article", "Conjuction", "Noun", "Numeral", 
-                "Adposition", "Preposition", "Postposition", 
-                "Participle", "Pronoun", "Verb"
-        ],
-        "fi" : ["Adjektiivi", "Adverbi", "Artikkeli", "Konjunktio", "Substantiivi", "Numeraali", 
-                "Adpositio", "Prepositio", "Postpositio", 
-                "Partisiippi", "Pronomini", "Verbi"
-        ],
-        "sv" : [""],
-}
 
 class Section:
         def __init__(self, title:str, content:str, children:list=[]) -> None:
@@ -193,14 +178,3 @@ class WikiParser:
         @property
         def page(self) -> Section:
                 return self.__page_root_section
-
-
-if __name__ == "__main__":
-        import sys
-        from pwiki.wiki import Wiki
-        exit(1) if len(sys.argv) < 2 else None
-        wiki = Wiki("en.wikipedia.org")
-        pt = wiki.page_text(sys.argv[1])  
-        parser = WikiParser(pt, sys.argv[1])
-        print("en.wikpedia.org\n", parser.format_section_content(sys.argv[1], "en"))
-        exit(0)
