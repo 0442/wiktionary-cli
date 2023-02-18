@@ -72,7 +72,7 @@ def get_wiki_page(args:list[str], do_formatting=True) -> int:
                         if do_formatting:
                                 print(parsing.format_section_content(sect, lang))
                         else:
-                                print(page.find(sect_path).content)
+                                print(sect.content)
                 else:
                         print(f"No section '{args[2]}'.")
                         return 0
@@ -120,8 +120,12 @@ def get_dictionary_entry(args:list[str], do_formatting=True) -> int:
                         for wc in languages.word_classes[lang]:
                                 sect = page.find(wc)
                                 if sect:
-                                        sect_str = parsing.format_section_content(sect, lang)
-                                        print( sect_str+'\n\n' if sect_str is not None else '', end="")
+                                        if do_formatting:
+                                                sect_str = parsing.format_section_content(sect, lang)
+                                        else:
+                                                sect_str = sect.content
+
+                                        print( sect_str+'\n\n' if sect_str is not None else "None", end="")
 
                 else:
                         sect = page.find(sect_path)
@@ -129,7 +133,7 @@ def get_dictionary_entry(args:list[str], do_formatting=True) -> int:
                                 if do_formatting:
                                         print(parsing.format_section_content(sect, lang))
                                 else:
-                                        print(page.find(sect_path).content)
+                                        print(sect.content)
                         else:
                                 print(f"No section '{args[2]}'.")
                                 return 1
