@@ -1,5 +1,5 @@
 import re
-from Tools.wikiparser import Section
+from utils.wikiparser import Section
 
 # some utility functions
 
@@ -131,21 +131,22 @@ def __format_indents(lines:list) -> list:
 
         formatted_lines = []
         def indent_sub_sections(lines:list, formatted_lines:list, self_d:int=1):
+                """Recursively indent and linenumber definitions and their sub definitions.
                 """
-                Recursively finds lines to be indented and numbered.
-                """
-                indent_str = "▏   "
+                #indent_str = "▏   "
+                indent_str = "|   "
+
                 linenum = 1
                 while len(lines) > 0:
                         line = lines.pop(0)
 
-                        # '##' -lines, ie. if sub, go down a level, recurse
+                        # '##' -lines (sub definitions), recurse
                         if re.search("^" + (self_d+1)*"#" + "[^#\:\*]+.*$", line):
                                 lines.insert(0,line)
                                 indent_sub_sections(lines, formatted_lines, self_d + 1)
                                 continue
 
-                        # '#' -lines, ie. if on same level 
+                        # '#' -lines (definitions)
                         elif re.search("^" + (self_d)*"#" + "[^#\:\*]+.*$", line):
                                 f_line = (self_d-1)*("\033[2m" + indent_str + "\033[0m") + str(linenum) + "." + line.removeprefix(self_d*"#")
                                 linenum += 1
@@ -157,10 +158,12 @@ def __format_indents(lines:list) -> list:
                         # '#*' -lines (quotation title/source)
                         elif re.search("^" + (self_d)*"#" + "\*" + "[^#\:\*]+.*$", line):
                                 f_line = (self_d)*("\033[2m"+indent_str+"\033[0m") + "\033[3;31m" + line.removeprefix(self_d*"#" + "*") + "\033[24;39m"
+                                continue # to exclude quotations
 
                         # '#:*' -lines (quotation itself)
                         elif re.search("^" + (self_d)*"#" + "\*\:" + "[^#\:\*]+.*$", line):
                                 f_line = (self_d+1)*("\033[2m"+indent_str+"\033[0m") + line.removeprefix(self_d*"#" + "*:")
+                                continue # to exclude quotations
                         
                         # if line is a header, reset linenum
                         elif re.search("^===", line):
@@ -187,7 +190,6 @@ def __format_curly_bracketed_str(bracketed_str:str) -> str:
 
         # format quotes
         if "quote-book" in sections or "quote-journal" in sections or "quote-web" in sections or "quote-text" in sections:
-                """
                 quote = ""
                 year = ""
                 title = ""
@@ -211,8 +213,6 @@ def __format_curly_bracketed_str(bracketed_str:str) -> str:
 
                 formatted_str += f'"{title}", {year})\033[22m "{quote}"'
                 return formatted_str
-                """
-                return "" # exclude quotes, as they take up a lot of space
 
         sections.remove("en") if "en" in sections else None
         sections.remove("lb") if "lb" in sections else None
@@ -238,7 +238,6 @@ def __format_curly_bracketed_str(bracketed_str:str) -> str:
 def format_section_content(section:Section, lang:str) -> str:
         """ Returns the text content of a section formatted into a nicer format.
         """
-        # FIXME: leaves some definitions out, e.g. test with "hash" and compare to the raw version -r
         section_content_rows = section.content.splitlines()
         # add section header
         section_content_rows .insert(0, "\033[1;34m" + section.title + "\033[22;39m")
@@ -249,6 +248,8 @@ def format_section_content(section:Section, lang:str) -> str:
         for line in section_content_rows:
                 newline = line
 
+
+                # FIXME code repetition
                 brackets = find_bracketed_strings(newline, "'''", "'''")
                 while len(brackets) > 0:
                         target_bracket = brackets[0]
@@ -262,6 +263,22 @@ def format_section_content(section:Section, lang:str) -> str:
                         newline = newline[ : bracket_start] + replacement + newline[bracket_end : ]
 
                         brackets = find_bracketed_strings(newline, "'''", "'''")
+
+
+
+                brackets = find_bracketed_strings(newline, "''", "''")
+                while len(brackets) > 0:
+                        target_bracket = brackets[0]
+
+                        bracket_span = target_bracket[1]
+                        bracket_start = bracket_span[0]
+                        bracket_end = bracket_span[1]
+                        bracketed_str = target_bracket[0]
+
+                        replacement = "\033[3m" + bracketed_str.strip("'") + "\033[23m"
+                        newline = newline[ : bracket_start] + replacement + newline[bracket_end : ]
+
+                        brackets = find_bracketed_strings(newline, "''", "''")
 
 
 
@@ -299,7 +316,7 @@ def format_section_content(section:Section, lang:str) -> str:
 
                 formatted_lines.append(newline)
         
-        # TODO: strip unused tags, e.g. <code></code>
+        # TODO strip unused tags, e.g. <code></code>
 
         formatted_lines = __format_indents(formatted_lines)
 

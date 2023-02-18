@@ -1,8 +1,8 @@
-from Tools.wikiparser import WikiParser
+from utils.wikiparser import WikiParser
 from pwiki.wiki import Wiki
-import Ui.cli_ui as cli_ui
-import Tools.languages as languages
-import Tools.parsing_utils as parsing
+import ui.cli_ui as cli_ui
+import utils.languages as languages
+import utils.parsing_utils as parsing
 
 def parse_translations_section(tr_section:str, from_lang, to_lang:str) -> str:
         return tr_section
@@ -117,8 +117,8 @@ def get_dictionary_entry(args:list[str], do_formatting=True) -> int:
         # if a section is given, print that section (or a group of sections, if sect_path is a key word associated with some arbitrary group of sections, e.g. 'definitions', which matches Nouns, Verbs, etc..)
         if sect_path:
                 if sect_path.lower() == "definitions" or sect_path.lower() == "defs":
-                        for wc in languages.word_classes[lang]:
-                                sect = page.find(wc)
+                        for wc in languages.definitions[lang]:
+                                sect = page.find(languages.abbrev_table[lang][lang]+ "/" + wc)
                                 if sect:
                                         if do_formatting:
                                                 sect_str = parsing.format_section_content(sect, lang)
@@ -186,7 +186,7 @@ def translate_word(args:list[str]) -> int:
 
         tr_str = ""
         if from_lang == "fi":
-                for wc in languages.word_classes[from_lang]:
+                for wc in languages.definitions[from_lang]:
                         tr_section = parser.find(f"{word}/{languages.abbrev_table[from_lang][from_lang].capitalize()}/{wc}/Käännökset", from_lang).content
                         if not tr_section:
                                 continue
@@ -195,7 +195,7 @@ def translate_word(args:list[str]) -> int:
 
         elif from_lang == "en":
                 full_str = ""
-                for wc in languages.word_classes[from_lang]:
+                for wc in languages.definitions[from_lang]:
                         path=f"{word}/{languages.abbrev_table[from_lang][from_lang]}/{wc}/Translations"
                         tr_section = page.find(path)
                         if not tr_section:

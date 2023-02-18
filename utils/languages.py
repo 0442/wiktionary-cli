@@ -1,12 +1,12 @@
-word_classes = {
+definitions = {
         "en" : [
                 "Adjective", "Adverb", "Article", "Conjuction", "Noun", "Numeral", 
                 "Adposition", "Preposition", "Postposition", 
-                "Participle", "Pronoun", "Verb"
+                "Participle", "Pronoun", "Verb", "Interjection"
         ],
         "fi" : ["Adjektiivi", "Adverbi", "Artikkeli", "Konjunktio", "Substantiivi", "Numeraali", 
                 "Adpositio", "Prepositio", "Postpositio", 
-                "Partisiippi", "Pronomini", "Verbi"
+                "Partisiippi", "Pronomini", "Verbi", "Interjektio"
         ],
         "sv" : [""],
 }
@@ -22,9 +22,9 @@ abbrev_table = {
         },
 
         "fi" : {        
-                "en" : "englanti",
-                "fi" : "suomi",
-                "sv" : "ruotsi", 
+                "en" : "Englanti",
+                "fi" : "Suomi",
+                "sv" : "Ruotsi", 
         },
 
         "sv" : {

@@ -1,4 +1,4 @@
-import Tools.languages as languages
+import utils.languages as languages
 
 # Functions for printing some output
 def word_not_found(word:str, search_lang:str) -> None:
