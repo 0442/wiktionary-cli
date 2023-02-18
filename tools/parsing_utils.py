@@ -133,12 +133,13 @@ def __format_indents(lines:list) -> list:
         def indent_sub_sections(lines:list, formatted_lines:list, self_d:int=1):
                 """Recursively indent and linenumber definitions and their sub definitions.
                 """
-                #indent_str = "▏   "
-                indent_str = "|   "
+                indent_str = "\033[2m" + "▏   " + "\033[0m"
+                #indent_str = "\033[2m" + "|   " + "\033[0m"
 
                 linenum = 1
                 while len(lines) > 0:
                         line = lines.pop(0)
+                        indent_count = self_d + 1
 
                         # '##' -lines (sub definitions), recurse
                         if re.search("^" + (self_d+1)*"#" + "[^#\:\*]+.*$", line):
@@ -148,31 +149,31 @@ def __format_indents(lines:list) -> list:
 
                         # '#' -lines (definitions)
                         elif re.search("^" + (self_d)*"#" + "[^#\:\*]+.*$", line):
-                                f_line = (self_d-1)*("\033[2m" + indent_str + "\033[0m") + str(linenum) + "." + line.removeprefix(self_d*"#")
+                                f_line = (indent_count-1) * indent_str + str(linenum) + "." + line.removeprefix(self_d*"#").strip()
                                 linenum += 1
 
                         # '#:' -lines (examples)
                         elif re.search("^" + (self_d)*"#" + "\:" + "[^#\:\*]+.*$", line):
-                                f_line = (self_d)*("\033[2m"+indent_str+"\033[0m") + "\033[31m" + line.removeprefix(self_d*"#" + ":") + "\033[39m"
+                                f_line = indent_count * indent_str + "\033[31m" + line.removeprefix(self_d*"#" + ":").strip() + "\033[39m"
 
                         # '#*' -lines (quotation title/source)
                         elif re.search("^" + (self_d)*"#" + "\*" + "[^#\:\*]+.*$", line):
-                                f_line = (self_d)*("\033[2m"+indent_str+"\033[0m") + "\033[3;31m" + line.removeprefix(self_d*"#" + "*") + "\033[24;39m"
+                                f_line = indent_count * indent_str + "\033[3;31m" + line.removeprefix(self_d*"#" + "*").strip() + "\033[24;39m"
                                 continue # to exclude quotations
 
                         # '#:*' -lines (quotation itself)
                         elif re.search("^" + (self_d)*"#" + "\*\:" + "[^#\:\*]+.*$", line):
-                                f_line = (self_d+1)*("\033[2m"+indent_str+"\033[0m") + line.removeprefix(self_d*"#" + "*:")
+                                f_line = (indent_count+1) * indent_str + line.removeprefix(self_d*"#" + "*:").strip()
                                 continue # to exclude quotations
                         
                         # if line is a header, reset linenum
-                        elif re.search("^===", line):
-                                f_line = line
+                        elif re.search("^===.*$", line):
+                                f_line = line.strip("=")
                                 linenum=1
 
                         # if line starts with other than '#', it doesn't need to be formatted here
                         elif re.search("^[^#]*$", line):
-                                f_line = line
+                                f_line = (indent_count - 1) * indent_str + line
                         
                         # if line is higher level, break and return to go back up a level
                         else:
@@ -240,7 +241,7 @@ def format_section_content(section:Section, lang:str) -> str:
         """
         section_content_rows = section.content.splitlines()
         # add section header
-        section_content_rows .insert(0, "\033[1;34m" + section.title + "\033[22;39m")
+        section_content_rows .insert(0, "===" + "\033[1;34m" + section.title + "\033[22;39m" + "===")
 
         section_content_rows = __join_multiline_brackets(section_content_rows)
 
