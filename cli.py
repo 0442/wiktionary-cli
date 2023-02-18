@@ -3,10 +3,11 @@
 import sys 
 from time import sleep
 import sys
-import Ui.cli_ui as cli_ui
-import Services.services as services
+import ui.cli_ui as cli_ui
+import services.services as services
 
 def main() -> int:
+        #TODO add more options, e.g. one for including quotations
         # extract options and other, positional arguments
         options = [opt for opt in sys.argv if opt.startswith("-")]
         positional_args = [arg for arg in sys.argv[1:] if arg not in options] 

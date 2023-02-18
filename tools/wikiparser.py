@@ -92,7 +92,7 @@ class WikiParser:
         def __init__(self, page_text:str, page_title:str) -> None:
                 self.__page_text = page_text
                 self.__page_title = page_title
-                self.__page_root_section = self.__parse_page()
+                self.__page_root_section = self.__split_into_sections()
 
         def __get_children(self, section_tuples:list, child_depth:int=1) -> Section:
                 """ Recursively arrange a dictionary of wiki titles and their contents into a parent-child tree.
@@ -121,8 +121,8 @@ class WikiParser:
                 return children
 
 
-        def __parse_page(self) -> Section:
-                """ Parse wiki page into a section object for easier data extraction
+        def __split_into_sections(self) -> Section:
+                """ Parse wiki page into a section object
                 """
                 # Note: using 'title' and 'title' synonymously in comments ie. Referring to the same thing with both words.
 
