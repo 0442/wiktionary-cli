@@ -126,9 +126,7 @@ class WikiParser:
                 """
                 # Note: using 'title' and 'title' synonymously in comments ie. Referring to the same thing with both words.
 
-                title_matches = list( 
-                        re.finditer("^=+" + "[^=]+" + "=+$", self.__page_text, re.MULTILINE)
-                )
+                title_matches = list(re.finditer("^=+" + "[^=]+" + "=+$", self.__page_text, re.MULTILINE))
 
                 # get the starting and ending positions for each title
                 section_spans = [(0,0)]         # Pages from wiktionary api don't contain the page's main title. Pages don't often start with a subtitle, but rather with some info right under the main title. 
@@ -161,7 +159,7 @@ class WikiParser:
                         # otherwise use the next title's beginning as stop:
                         else:
                                 end = section_spans[s_i + 1][0]
-                                section_content = self.__page_text[start : end]
+                                section_content = self.__page_text[start : end].strip()
                         
                         sections.append( (section_title, section_content) )
 
