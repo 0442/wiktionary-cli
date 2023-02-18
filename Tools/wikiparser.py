@@ -29,8 +29,7 @@ class Section:
                 self.__children.append(child)
         
         def count_children(self):
-                """
-                Recursively count section's all child sections. (excluding itself)
+                """ Recursively count section's all child sections. (meaning this section excluded)
                 """
                 count = len(self.__children)
                 for child in self.__children:
@@ -38,8 +37,7 @@ class Section:
                 return count
 
         def __get_sections(self, section_title:str) -> list['Section']:
-                """
-                Return all sections with the given title.
+                """ Return all sections with the given title.
                 """
                 matches = []
                 if self.title == section_title: 
@@ -54,8 +52,8 @@ class Section:
                 return matches
 
         def find(self, sect_path:str) -> 'Section':
-                """
-                Return the first occurence of a section with the given title.\n
+                """Return the first occurence of a section with the given title.
+
                 Return None if no section found. 
                 Either a section name can be given or a path, eg. English/Noun
                 """
@@ -97,10 +95,9 @@ class WikiParser:
                 self.__page_root_section = self.__parse_page()
 
         def __get_children(self, section_tuples:list, child_depth:int=1) -> Section:
-                """
-                Recursively arrange a dictionary of wiki titles and their contents into a parent-child tree.
+                """ Recursively arrange a dictionary of wiki titles and their contents into a parent-child tree.
                 
-                Sections is a list of tuples which contain the section title and the text content assosiated with that title.
+                Section_tuples is a list of tuples which contain the section title and the text content assosiated with that title.
                 eg.
                 sections[0] = ("title","text")
                 """
@@ -125,8 +122,7 @@ class WikiParser:
 
 
         def __parse_page(self) -> Section:
-                """
-                Parse wiki page into a section object for easier data extraction
+                """ Parse wiki page into a section object for easier data extraction
                 """
                 # Note: using 'title' and 'title' synonymously in comments ie. Referring to the same thing with both words.
 
