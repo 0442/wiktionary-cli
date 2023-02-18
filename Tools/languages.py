@@ -33,10 +33,3 @@ abbrev_table = {
                 "sv" : "svenska",
         }
 }
-
-# for convenience
-lang_in_own_lang = {
-        "en" : "english",
-        "fi" : "suomi",
-        "sv" : "svenska",
-}
