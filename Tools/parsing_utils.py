@@ -1,11 +1,12 @@
 import re
-from .wikiparser import Section
+from Tools.wikiparser import Section
 
 # some utility functions
 
 def __find_brackets(line:str, starting_bracket:str, ending_bracket:str) -> list[dict]:
         """
         Find brackets and their positions in a string.
+        Returns brackets in the same order as they are found in the string.
         Returns a dictionary where 'string' is the matching bracket, 
         'start' is the starting position of the bracket and 'end' is the ending position.
         'start' and 'end' will be the same if bracket length is 1, e.g. if matching agains '{' and '}'.
@@ -21,11 +22,14 @@ def __find_brackets(line:str, starting_bracket:str, ending_bracket:str) -> list[
 
         return brackets
 
-def __get_matching_bracket_spans(brackets:list[dict]) -> list[tuple]:
-        # recursive function for finding brackets (including nested ones)
+def __get_matching_bracket_positions(brackets:list[dict], starting_bracket:str, ending_bracket:str) -> list[tuple]:
+        """ Returns a list of starting and ending positions of matching brackets from the output of __find_brackets().
+
+        recursive function for finding the starting and ending positions of matching brackets (including nested ones)
         """
-        Returns a list of spans of matching brackets from the output of find_brackets().
-        """
+        # brackets may included characters that needed to be escaped for regex, so remove the backslashes
+        starting_bracket = starting_bracket.replace("\\", "")
+        ending_bracket = ending_bracket.replace("\\", "")
 
         bracket_pairs = []
         if len(brackets) < 1:
@@ -34,25 +38,30 @@ def __get_matching_bracket_spans(brackets:list[dict]) -> list[tuple]:
         prev_brack = brackets.pop(0)
 
         while len(brackets) > 0:
-                # if opening bracket
-                if brackets[0]["string"] == "{{" and prev_brack["string"] == "}}":
-                        prev_brack = brackets.pop(0)
+                curr_brack = brackets.pop(0)
+
+                # if opening bracket, continue to find it's closing one
+                if curr_brack["string"] == starting_bracket and prev_brack["string"] == ending_bracket:
+                        prev_brack = curr_brack
                         continue
 
-                # if opening, nested bracket, recurse
-                if brackets[0]["string"] == "{{" and prev_brack["string"] == "{{":
-                        #prev_brack = brackets.pop(0)
-                        nest_bracks = __get_matching_bracket_spans(brackets)
+                # if opening nested bracket, recurse
+                if curr_brack["string"] == starting_bracket and prev_brack["string"] == starting_bracket:
+                        brackets.insert(0, curr_brack)
+                        nest_bracks = __get_matching_bracket_positions(brackets, starting_bracket, ending_bracket)
+
                         [bracket_pairs.append(b) for b in nest_bracks]
+                        prev_brack = curr_brack
                         continue
 
                 # if closing brackets, add to matching pairs
-                if brackets[0]["string"] == "}}" and prev_brack["string"] == "{{":
-                        bracket_pairs.append( (prev_brack["start"], brackets[0]["end"]) )
-                        prev_brack = brackets.pop(0)
+                if curr_brack["string"] == ending_bracket and prev_brack["string"] == starting_bracket:
+                        bracket_pairs.append( (prev_brack["start"], curr_brack["end"]) )
+                        prev_brack = curr_brack
                         continue
                 
-                if brackets[0]["string"] == "}}" and prev_brack["string"] == "}}":
+                # if two closing brackets in a row, go break and go up a level in recursion
+                if curr_brack["string"] == ending_bracket and prev_brack["string"] == ending_bracket:
                         break
 
         return bracket_pairs
@@ -63,8 +72,20 @@ def find_bracketed_strings(string:str, starting_bracket:str, ending_bracket:str)
         for finding all bracketed strings and their spans, 
         including nested ones, in a string.
         """
-        brackets = __find_brackets(string, starting_bracket, ending_bracket)
-        br_spans = __get_matching_bracket_spans(brackets)
+        # if starting and ending brackets are the same, can't match them, dont try to find matching/nested ones
+        if starting_bracket == ending_bracket:
+                brackets = __find_brackets(string, starting_bracket, ending_bracket)
+                br_spans = []
+                if brackets:
+                        prev = brackets.pop(0)
+                        while len(brackets) > 0:
+                                curr = brackets.pop(0)
+                                br_spans.append((prev["start"],curr["end"]))
+                                prev = curr
+        else:
+                brackets = __find_brackets(string, starting_bracket, ending_bracket)
+                br_spans = __get_matching_bracket_positions(brackets, starting_bracket, ending_bracket)
+
         bracketed_strs = []
         for span in br_spans:
                 bracketed_strs.append( (string[span[0] : span[1]], span) )
@@ -72,64 +93,94 @@ def find_bracketed_strings(string:str, starting_bracket:str, ending_bracket:str)
         return bracketed_strs
 
 
-def __format_indents(lines:list, self_d:int=1) -> list:
-        """Returns lines of a wiki page with indentation and line numbers added.
 
-        Recursively finds lines to be indented and numbered.
+def __join_multiline_brackets(lines:list) -> list:
+        """Returns a copy of lines where brackets that span over multiple lines are joined onto the same line. 
+        
+        Some brackets' contents are split over multiple lines. Info inside brackets is often separated with '|'. 
+        Long bracketed strings are linebroken at these separators so that the following lines belonging inside these brackets start with '|'.
+        This function joins these lines together.
         """
-        indent_str = "▏   "
+        lines = lines.copy()
+
+        if len(lines) < 1:
+                return lines
+
         formatted_lines = []
-        linenum = 1
+        prev_line = lines.pop(0)
         while len(lines) > 0:
-                line = lines[0].strip()
-
-                # '##' -lines, ie. if sub, go down a level, recurse
-                if re.search("^" + (self_d+1)*"#" + "[^#\:\*]+.*$", line):
-                        subs = __format_indents(lines, self_d + 1)
-                        for s in subs:
-                                formatted_lines.append(s)
-
-                # '#' -lines, ie. if on same level 
-                elif re.search("^" + (self_d)*"#" + "[^#\:\*]+.*$", line):
-                        f_line = (self_d-1)*("\033[2m" + indent_str + "\033[0m") + str(linenum) + "." + line.removeprefix(self_d*"#")
-                        lines.pop(0)
-                        formatted_lines.append(f_line)
-                        linenum += 1
-
-                # '#:' -lines / examples?
-                elif re.search("^" + (self_d)*"#" + "\:" + "[^#\:\*]+.*$", line):
-                        f_line = (self_d)*("\033[2m"+indent_str+"\033[0m") + "\033[31m" + line.removeprefix(self_d*"#" + ":") + "\033[39m"
-                        lines.pop(0)
-                        formatted_lines.append(f_line)
-
-                # '#*' -lines / quotes?
-                elif re.search("^" + (self_d)*"#" + "\*" + "[^#\:\*]+.*$", line):
-                        f_line = (self_d)*("\033[2m"+indent_str+"\033[0m") + "\033[3;31m" + line.removeprefix(self_d*"#" + "*") + "\033[24;39m"
-                        lines.pop(0)
-                        formatted_lines.append(f_line)
-
-                # '#:*' -lines
-                elif re.search("^" + (self_d)*"#" + "\*\:" + "[^#\:\*]+.*$", line):
-                        f_line = (self_d+1)*("\033[2m"+indent_str+"\033[0m") + line.removeprefix(self_d*"#" + "*:")
-                        lines.pop(0)
-                        formatted_lines.append(f_line)
+                curr_line = lines.pop(0)
+                if curr_line.startswith("|"):
+                        prev_line += curr_line
+                        continue
                 
-                # if line is a header, reset linenum
-                elif re.search("^===", line):
-                        linenum=1
-                        lines.pop(0)
-                        formatted_lines.append(line)
-
-                # if line starts with other than '#', it doesn't need to be formatted here
-                elif re.search("^[^#]*$", line):
-                        lines.pop(0)
-                        formatted_lines.append(line)
-                
-                # if line is higher level, break and return to go back up a level
                 else:
-                        break
+                        formatted_lines.append(prev_line)
+                        prev_line = curr_line
+
+        formatted_lines.append(prev_line)
 
         return formatted_lines
+        
+
+
+def __format_indents(lines:list) -> list:
+        """Returns a copy of the lines of a wiki page with indentation and line numbers added.
+        """
+        lines = lines.copy()
+
+        formatted_lines = []
+        def indent_sub_sections(lines:list, formatted_lines:list, self_d:int=1):
+                """
+                Recursively finds lines to be indented and numbered.
+                """
+                indent_str = "▏   "
+                linenum = 1
+                while len(lines) > 0:
+                        line = lines.pop(0)
+
+                        # '##' -lines, ie. if sub, go down a level, recurse
+                        if re.search("^" + (self_d+1)*"#" + "[^#\:\*]+.*$", line):
+                                lines.insert(0,line)
+                                indent_sub_sections(lines, formatted_lines, self_d + 1)
+                                continue
+
+                        # '#' -lines, ie. if on same level 
+                        elif re.search("^" + (self_d)*"#" + "[^#\:\*]+.*$", line):
+                                f_line = (self_d-1)*("\033[2m" + indent_str + "\033[0m") + str(linenum) + "." + line.removeprefix(self_d*"#")
+                                linenum += 1
+
+                        # '#:' -lines (examples)
+                        elif re.search("^" + (self_d)*"#" + "\:" + "[^#\:\*]+.*$", line):
+                                f_line = (self_d)*("\033[2m"+indent_str+"\033[0m") + "\033[31m" + line.removeprefix(self_d*"#" + ":") + "\033[39m"
+
+                        # '#*' -lines (quotation title/source)
+                        elif re.search("^" + (self_d)*"#" + "\*" + "[^#\:\*]+.*$", line):
+                                f_line = (self_d)*("\033[2m"+indent_str+"\033[0m") + "\033[3;31m" + line.removeprefix(self_d*"#" + "*") + "\033[24;39m"
+
+                        # '#:*' -lines (quotation itself)
+                        elif re.search("^" + (self_d)*"#" + "\*\:" + "[^#\:\*]+.*$", line):
+                                f_line = (self_d+1)*("\033[2m"+indent_str+"\033[0m") + line.removeprefix(self_d*"#" + "*:")
+                        
+                        # if line is a header, reset linenum
+                        elif re.search("^===", line):
+                                f_line = line
+                                linenum=1
+
+                        # if line starts with other than '#', it doesn't need to be formatted here
+                        elif re.search("^[^#]*$", line):
+                                f_line = line
+                        
+                        # if line is higher level, break and return to go back up a level
+                        else:
+                                lines.insert(0,line)
+                                break
+
+                        formatted_lines.append(f_line)
+                                
+                return formatted_lines
+        
+        return indent_sub_sections(lines, formatted_lines)
 
 def __format_curly_bracketed_str(bracketed_str:str) -> str: 
         sections = bracketed_str.strip("}{").split("|")
@@ -185,51 +236,52 @@ def __format_curly_bracketed_str(bracketed_str:str) -> str:
 
 
 def format_section_content(section:Section, lang:str) -> str:
-        """ Returns the text of a section formatted into a nicer format.
+        """ Returns the text content of a section formatted into a nicer format.
         """
-        parsed_lines = section.content.splitlines()
+        # FIXME: leaves some definitions out, e.g. test with "hash" and compare to the raw version -r
+        section_content_rows = section.content.splitlines()
         # add section header
-        parsed_lines.insert(0, "\033[1;34m" + section.title + "\033[22;39m")
+        section_content_rows .insert(0, "\033[1;34m" + section.title + "\033[22;39m")
 
-        # format '''abc'''
-        # bold words surrounded by triple " ' "
-        line_i = 0
-        for line in parsed_lines:
-                newline = ""
-                curls = re.findall("\'{3}" + "[^']+" + "\'{3}", line)
-                for c in curls:
-                        new = c.strip("'")
-                        new = "\033[1m" + new + "\033[22m"
+        section_content_rows = __join_multiline_brackets(section_content_rows)
 
-                        newline = line.replace(c,new)
-                        parsed_lines[line_i] = newline
-                line_i += 1
-
-
-        # format '[[abcd]]'
-        # doesn't handle nested square brackets. 
-        format_squares = []
-        for line in parsed_lines:
-                newline = ""
-                for word in re.split("(\ |\.|\,|\;)", line):
-                        # find the beginning of [[]]
-                        if word.find("[[") != -1:
-                                word = "\033[35m" + word.replace("[", "")
-                        # find the end of [[]]
-                        if word.find("]]") != -1:
-                                word = word.replace("]", "") + "\033[39m"
-
-                        newline += word
-
-                format_squares.append(newline)
-
-
-        # TODO: use this method for other brackets and '''abc''' aswell
-        format_curly_brackets = []
-        for line in format_squares:
+        formatted_lines = []
+        for line in section_content_rows:
                 newline = line
 
-                brackets = find_bracketed_strings(line, "{{", "}}")
+                brackets = find_bracketed_strings(newline, "'''", "'''")
+                while len(brackets) > 0:
+                        target_bracket = brackets[0]
+
+                        bracket_span = target_bracket[1]
+                        bracket_start = bracket_span[0]
+                        bracket_end = bracket_span[1]
+                        bracketed_str = target_bracket[0]
+
+                        replacement = "\033[1m" + bracketed_str.strip("'") + "\033[22m"
+                        newline = newline[ : bracket_start] + replacement + newline[bracket_end : ]
+
+                        brackets = find_bracketed_strings(newline, "'''", "'''")
+
+
+
+                brackets = find_bracketed_strings(newline, "\[\[", "\]\]")
+                while len(brackets) > 0:
+                        target_bracket = brackets[0]
+
+                        bracket_span = target_bracket[1]
+                        bracket_start = bracket_span[0]
+                        bracket_end = bracket_span[1]
+                        bracketed_str = target_bracket[0]
+
+                        replacement = "\033[35m" + bracketed_str.strip("[]") + "\033[39m"
+                        newline = newline[ : bracket_start] + replacement + newline[bracket_end : ]
+
+                        brackets = find_bracketed_strings(newline, "\[\[", "\]\]")
+
+
+
+                brackets = find_bracketed_strings(newline, "{{", "}}")
                 while len(brackets) > 0:
                         target_bracket = brackets[0]
 
@@ -239,16 +291,16 @@ def format_section_content(section:Section, lang:str) -> str:
                         bracketed_str = target_bracket[0]
 
                         replacement = __format_curly_bracketed_str(bracketed_str)
-                        newline = newline[ : bracket_start] + replacement + newline[bracket_end: ]
+                        newline = newline[ : bracket_start] + replacement + newline[bracket_end : ]
 
                         brackets = find_bracketed_strings(newline, "{{", "}}")
 
-                format_curly_brackets.append(newline)
+
+
+                formatted_lines.append(newline)
         
         # TODO: strip unused tags, e.g. <code></code>
 
-        ## FORMAT LINES
-        indented_lines = []
-        indented_lines = __format_indents(format_curly_brackets)
+        formatted_lines = __format_indents(formatted_lines)
 
-        return '\n'.join(indented_lines)
+        return '\n'.join(formatted_lines)
