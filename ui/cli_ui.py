@@ -31,21 +31,24 @@ def print_help_msg() -> None:
 
         return
 
-def print_saved_searches():
+def print_saved_searches() -> int:
         db = Database()
-        ss = db.get_saved_searches()
-        if ss:
-                for s in ss:
-                        print(s)
+        searches = db.get_saved_searches()
+        if searches:
+                for s in searches:
+                        print(" | ".join(list(s)))
+
                 return 0
         else:
                 return 1
 
-def print_saved_pages():
+def print_saved_pages() -> int:
         db = Database()
-        s = db.get_saved_pages()
-        if s:
-                print(s)
+        pages = db.get_saved_pages()
+        if pages:
+                for p in pages:
+                        print(" | ".join(list(p)))
+
                 return 0
         else:
                 return 1
