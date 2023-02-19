@@ -69,33 +69,28 @@ class Database():
 
         return pages
 
-    def get_saved_searches(self, limit:int=None) -> list[str]:
+    def get_saved_searches(self, limit:int=None) -> list[tuple]:
         """Get saved searches from local database.
 
         limit: maximum number of searches to fetch. If no limit given, returns all searches.
 
-        returns a list of search strings in descending order (from newest to oldest).
+        returns a list of tuples with search str and search datetime in descending order (from newest to oldest).
         returns None if no searches found.
 
         Searches are returned even if DB_SAVE_SEARCHES is set to False in config. 
         To delete saved searches, use clear_searches().
         """
         if limit == None:
-            searches = self.__db.execute("SELECT S.text FROM Searches S ORDER BY S.id DESC").fetchall()
+            searches = self.__db.execute("SELECT S.text, S.datetime FROM Searches S ORDER BY S.id DESC").fetchall()
         elif limit <= 0:
             raise ValueError
         else:
-            searches = self.__db.execute("SELECT S.text FROM Searches S ORDER BY S.id DESC LIMIT ?", [limit]).fetchall()
+            searches = self.__db.execute("SELECT S.text, S.datetime FROM Searches S ORDER BY S.id DESC LIMIT ?", [limit]).fetchall()
 
         if searches == None:
             return None
 
-        # fetchall returns tuples, but only the search strings are wanted
-        formatted_searches = [] 
-        for s in searches:
-            formatted_searches.append(s[0])
-
-        return formatted_searches
+        return searches
 
 
     def clear_searches(self) -> None:
