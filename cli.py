@@ -16,7 +16,9 @@ def main() -> int:
         # check for invalid options
         valid_options = ["-r", "--raw", "-h", "--help", "-s", "--searches", "-p", "--pages"]
         invalid_opts  = [opt for opt in options if opt not in valid_options]
-        print( f"Invalid options: { ', '.join(invalid_opts) }.\n" ) if len(invalid_opts) > 0 else None
+        if invalid_opts:
+                print( f"Invalid options: { ', '.join(invalid_opts) }.\n" ) if len(invalid_opts) > 0 else None
+                return 1
 
         # handle options
         if "-h" in options or "--help" in options:
@@ -24,23 +26,10 @@ def main() -> int:
                 return 0
 
         if "-s" in options or "--searches" in options:
-                db = Database()
-                ss = db.get_saved_searches()
-                if ss:
-                    for s in ss:
-                        print(s)
-                    return 0
-                else:
-                    return 1
+                return cli_ui.print_saved_searches()
 
         if "-p" in options or "--pages" in options:
-                db = Database()
-                s = db.get_saved_pages()
-                if s:
-                    print(s)
-                    return 0
-                else:
-                    return 1
+                return cli_ui.print_saved_pages()
 
 
         # check and run function for given mode

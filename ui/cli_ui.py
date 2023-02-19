@@ -1,4 +1,5 @@
 import tools.languages as languages
+from services.db import Database
 
 # Functions for printing some output
 def word_not_found(word:str, search_lang:str) -> None:
@@ -29,3 +30,22 @@ def print_help_msg() -> None:
         print_supported_languages()
 
         return
+
+def print_saved_searches():
+        db = Database()
+        ss = db.get_saved_searches()
+        if ss:
+                for s in ss:
+                        print(s)
+                return 0
+        else:
+                return 1
+
+def print_saved_pages():
+        db = Database()
+        s = db.get_saved_pages()
+        if s:
+                print(s)
+                return 0
+        else:
+                return 1
