@@ -322,3 +322,39 @@ def format_section_content(section:Section, lang:str) -> str:
         formatted_lines = __format_indents(formatted_lines)
 
         return '\n'.join(formatted_lines)
+
+
+
+def parse_translations_section(tr_section:str, from_lang, to_lang:str) -> str:
+        return tr_section
+        tr_str = ""
+        starts = list(re.finditer(".*\(trans-top.*", tr_section))
+        ends = list(re.finditer(".*\(trans-bottom\)", tr_section))
+        while len(starts) > 0:
+                subsect_start = starts.pop(0).start()
+                subsect_end = ends.pop(0).end()
+                subsect = tr_section[subsect_start:subsect_end]
+                subsect_lines = subsect.splitlines()
+                subsect_lines[0] = subsect_lines[0].replace("(trans-top, ", "").replace(")", "")
+                subsect_lines.pop(len(subsect_lines)-1)
+                relevant_lines = []
+                for line in subsect_lines:
+                        if line.startswith(f"* {lang_abbrev_table[from_lang][to_lang]}"):
+                                translated_words = line.removeprefix(f"* {lang_abbrev_table[from_lang][to_lang]}: ")
+                                split = re.split("\(" + "([^)(]+)" + "\)",translated_words)
+                                i = 1
+                                for l in split:
+                                        l = l.strip()
+                                        if not l:
+                                                continue
+                                        relevant_lines.append(("  " + str(i) + ". " + l))
+                                        i+=1
+
+                        elif line.startswith("*"):
+                                continue
+                        else:
+                                relevant_lines.append(line)
+
+                tr_str += "\n".join(relevant_lines) + "\n\n"
+
+        return tr_str
