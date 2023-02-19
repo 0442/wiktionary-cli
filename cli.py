@@ -5,6 +5,7 @@ from time import sleep
 import sys
 import ui.cli_ui as cli_ui
 import services.services as services
+import services.db as db
 
 def main() -> int:
         #TODO add more options, e.g. one for including quotations
@@ -21,10 +22,27 @@ def main() -> int:
                 cli_ui.print_help_msg()
                 exit(1)
 
-        # print help message
+        # handle options
         if "-h" in options or "--help" in options:
                 cli_ui.print_help_msg()
                 return 0
+        if "-s" in options or "--searches" in options:
+                ss = db.get_saved_searches()
+                if ss:
+                    for s in ss:
+                        print(s)
+                    return 0
+                else:
+                    return 1
+
+        if "-p" in options or "--pages" in options:
+                s = db.get_saved_pages()
+                if s:
+                    print(s)
+                    return 0
+                else:
+                    return 1
+
 
         # check and run function for given mode
         translate_mode_names = ["t", "tr", "translate"]
