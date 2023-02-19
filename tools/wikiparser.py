@@ -1,7 +1,7 @@
 import re
 
 class Section:
-        def __init__(self, title:str, content:str, children:list=[]) -> None:
+        def __init__(self, title:str, content:str, children:list=[]) -> 'Section':
                 self.__children = children
                 self.__content = content
                 self.__depth = int(title.count("=") / 2)
@@ -38,9 +38,11 @@ class Section:
 
         def __get_sections(self, section_title:str) -> list['Section']:
                 """ Return all sections with the given title.
+                Case insensitive.
                 """
+                # TODO add wildcards * 
                 matches = []
-                if self.title == section_title: 
+                if self.title.lower() == section_title.lower(): 
                         matches.append(self)
 
                 for c in self.children:
@@ -56,10 +58,11 @@ class Section:
 
                 Return None if no section found. 
                 Either a section name can be given or a path, eg. English/Noun
+                Search is case insensitive.
                 """
                 # format path
                 path = sect_path.split("/")
-                path = [s.strip(" /") for s in path if s]
+                path = [s.strip(" /").lower() for s in path if s]
                 
                 # find the wanted section
                 sect = self
@@ -76,6 +79,7 @@ class Section:
                 """
                 Return all sections with the given title.
                 """
+                # TODO add wildcards * 
                 matches = self.__get_sections(section_title)
                 return matches
 
@@ -89,7 +93,7 @@ class Section:
         
 
 class WikiParser:
-        def __init__(self, page_text:str, page_title:str) -> None:
+        def __init__(self, page_text:str, page_title:str) -> 'WikiParser':
                 self.__page_text = page_text
                 self.__page_title = page_title
                 self.__page_root_section = self.__split_into_sections()
@@ -144,7 +148,7 @@ class WikiParser:
                 for s in section_spans:
                         title = self.__page_text[s[0] : s[1]]
                         if title != '':
-                                titles.append(title)
+                                titles.append(title.strip())
                 
                 # Section contents
                 sections = []
@@ -170,5 +174,11 @@ class WikiParser:
         
         
         @property
-        def page(self) -> Section:
+        def page_root_section(self) -> Section:
                 return self.__page_root_section
+        @property
+        def page_text(self) -> str:
+                return self.__page_text
+        @property
+        def page_title(self) -> str:
+                return self.__page_title
