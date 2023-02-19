@@ -22,10 +22,10 @@ def print_help_msg() -> None:
         print("  sanakirja translate|tr|t <from-lang> <to-lang> <word>")
         print("")
         print("Options:")
-        print("  -h --help \tShow this screen.")
-        print("  -r --raw  \tDon't format output.")
-        print("  -s --searches \tPrint saved searches")
-        print("  -p --pages \tPrint saved pages")
+        print("  -h --help      Show this screen.")
+        print("  -r --raw       Don't format output.")
+        print("  -s --searches  Print saved searches")
+        print("  -p --pages     Print saved pages")
         print_supported_languages()
 
         return
