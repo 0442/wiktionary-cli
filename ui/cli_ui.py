@@ -24,6 +24,8 @@ def print_help_msg() -> None:
         print("Options:")
         print("  -h --help \tShow this screen.")
         print("  -r --raw  \tDon't format output.")
+        print("  -s --searches \tPrint saved searches")
+        print("  -p --pages \tPrint saved pages")
         print_supported_languages()
 
         return
