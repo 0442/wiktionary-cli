@@ -5,7 +5,7 @@ from time import sleep
 import sys
 import ui.cli_ui as cli_ui
 import services.services as services
-import services.db as db
+from services.db import Database
 
 def main() -> int:
         #TODO add more options, e.g. one for including quotations
@@ -14,19 +14,17 @@ def main() -> int:
         positional_args = [arg for arg in sys.argv[1:] if arg not in options] 
 
         # check for invalid options
-        valid_options = ["-r", "--raw", "-h", "--help"]
+        valid_options = ["-r", "--raw", "-h", "--help", "-s", "--searches", "-p", "--pages"]
         invalid_opts  = [opt for opt in options if opt not in valid_options]
-        print( f"Invalid options: { ', '.join() }.\n" ) if len(invalid_opts) > 0 else None
-
-        if len(positional_args) < 3:
-                cli_ui.print_help_msg()
-                exit(1)
+        print( f"Invalid options: { ', '.join(invalid_opts) }.\n" ) if len(invalid_opts) > 0 else None
 
         # handle options
         if "-h" in options or "--help" in options:
                 cli_ui.print_help_msg()
                 return 0
+
         if "-s" in options or "--searches" in options:
+                db = Database()
                 ss = db.get_saved_searches()
                 if ss:
                     for s in ss:
@@ -36,6 +34,7 @@ def main() -> int:
                     return 1
 
         if "-p" in options or "--pages" in options:
+                db = Database()
                 s = db.get_saved_pages()
                 if s:
                     print(s)
