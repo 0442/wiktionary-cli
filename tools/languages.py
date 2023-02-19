@@ -2,11 +2,11 @@ definitions = {
         "en" : [
                 "Adjective", "Adverb", "Article", "Conjuction", "Noun", "Numeral", 
                 "Adposition", "Preposition", "Postposition", 
-                "Participle", "Pronoun", "Verb", "Interjection"
+                "Participle", "Pronoun", "Verb", "Interjection", "Erisnimi"
         ],
         "fi" : ["Adjektiivi", "Adverbi", "Artikkeli", "Konjunktio", "Substantiivi", "Numeraali", 
                 "Adpositio", "Prepositio", "Postpositio", 
-                "Partisiippi", "Pronomini", "Verbi", "Interjektio"
+                "Partisiippi", "Pronomini", "Verbi", "Interjektio", "Proper noun"
         ],
         "sv" : [""],
 }
