@@ -1,5 +1,5 @@
 from tools.wikiparser import WikiParser
-from pwiki.wiki import Wiki
+from services.wiki_api import WikiApi
 import ui.cli_ui as cli_ui
 import tools.languages as languages
 import tools.parsing_utils as parsing
@@ -8,7 +8,7 @@ from services.db import Database
 
 # TODO: split functions into smaller chunks.
 
-def get_wiki_page(args:list[str], do_formatting=True) -> int:
+def get_wiki_page(args:list[str], do_formatting=True, force_web=False) -> int:
         if len(args) < 2:
                 cli_ui.print_help_msg()
                 exit(1)
@@ -26,15 +26,18 @@ def get_wiki_page(args:list[str], do_formatting=True) -> int:
                 return 1
 
 
-        wiki = Wiki(f'{lang}.wikipedia.org')
-        
-        # check if page exists
-        if not wiki.exists(title):
+        wiki = WikiApi(lang, "wikipedia")
+        page_info = wiki.get_page(title)
+
+        if not page_info[0]:
                 cli_ui.word_not_found(title, lang)
                 return 1
         
-        page_text = wiki.page_text(title)
-        page = WikiParser(page_text,title)
+        page_title = page_info[0]
+        page_id = page_info[1]
+        page_text = page_info[2]
+
+        page = WikiParser(page_text,page_title)
 
         root_sect = page.page_root_section
 
@@ -58,7 +61,7 @@ def get_wiki_page(args:list[str], do_formatting=True) -> int:
         return 0
 
 
-def get_dictionary_entry(args:list[str], do_formatting=True) -> int:
+def get_dictionary_entry(args:list[str], do_formatting=True, force_web=False) -> int:
 
         if len(args) < 2:
                 cli_ui.print_help_msg()
@@ -82,17 +85,18 @@ def get_dictionary_entry(args:list[str], do_formatting=True) -> int:
         db.save_search(word)
         page = db.load_page(word)
 
-        if not page:
-                # form wiki link and object from chosen language
-                wiki = Wiki(f'{lang}.wiktionary.org')
+        if not page or force_web:
+                wiki = WikiApi(lang, "wiktionary")
+                page_info = wiki.get_page(word)
 
-                # check if page exists
-                if not wiki.exists(word):
+                if not page_info[0]:
                         cli_ui.word_not_found(word, lang)
                         return 1
+                
+                page_title = page_info[0]
+                page_id = page_info[1]
+                page_text = page_info[2]
 
-                page_text = wiki.page_text(word)
-                page_title = wiki.normalize_title(word)
                 page = WikiParser(page_text,page_title)
                 root_sect = page.page_root_section
                 db.save_page(page)
@@ -158,17 +162,21 @@ def translate_word(args:list[str]) -> int:
                 #print_languages.supported()
                 return 1
 
-        # form wiki link and object from chosen language
-        wiki = Wiki(F"{from_lang}.wiktionary.org")
 
-        # check if page exists
-        if not wiki.exists(word):
+
+        wiki = WikiApi(from_lang, "wikipedia")
+        page_info = wiki.get_page(word)
+
+        if not page_info[0]:
                 cli_ui.word_not_found(word, from_lang)
                 return 1
         
-        page_text = wiki.page_text(word)
+        page_title = page_info[0]
+        page_id = page_info[1]
+        page_text = page_info[2]
+        
         parser = WikiParser(page_text, word)
-        page = parser.page
+        page = parser.page_root_section
 
         tr_str = ""
         if from_lang == "fi":
