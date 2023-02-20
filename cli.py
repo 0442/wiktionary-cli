@@ -9,7 +9,10 @@ from services.db import Database
 
 def main() -> int:
         #TODO add more options, e.g. one for including quotations in dictionary output
-        # extract options and positional arguments
+        # option for resolving redirects when getting page from wiki
+
+
+
         options = [opt for opt in sys.argv if opt.startswith("-")]
         positional_args = [arg for arg in sys.argv[1:] if arg not in options] 
 
@@ -52,17 +55,18 @@ def main() -> int:
         wiki_mode_names = ["w", "wiki", "wikipedia"]
 
         if positional_args[0] in dict_mode_names:
-                return services.get_dictionary_entry(positional_args[1:], do_formatting = do_formatting, force_web=force_web, do_search=do_search)
+                return services.dictionary(positional_args[1:], do_formatting = do_formatting, force_web=force_web, do_search=do_search)
 
         elif positional_args[0] in translate_mode_names:
-                return services.translate_word(positional_args[1:])
+                return services.translation(positional_args[1:])
 
         elif positional_args[0] in wiki_mode_names:
-                return services.get_wiki_page(positional_args[1:])
+                return services.wikipedia(positional_args[1:])
 
         else:
                 cli_ui.print_help_msg()
                 return 1
+
 
 
 if __name__ == "__main__":
