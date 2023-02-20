@@ -55,7 +55,7 @@ def __group_by_dates(list:list[tuple]) -> dict:
 def print_saved_searches(do_formatting=True) -> int:
         """Print searches that are saved into the database
         """
-        
+
         db = Database()
         searches = db.get_saved_searches()
         if not searches:
@@ -65,10 +65,10 @@ def print_saved_searches(do_formatting=True) -> int:
         if do_formatting:
                 groups = __group_by_dates(searches)
 
-                for date, text_list in groups.items():
+                for date, searches in groups.items():
                         print("\033[1;31m" + date + "\033[m")
-                        for t in text_list:
-                                output_str = "\033[35;2m" + "▏   " + t[1] + "\033[22;3m" + " " + f"\"{t[0]}\"" + "\033[0m" + "\033[0m"
+                        for s in searches:
+                                output_str = "\033[35;2m" + "▏   " + s[1] + "\033[22;3m" + " " + f"\"{s[0]}\"" + "\033[0m" + "\033[0m"
                                 print(output_str)
         else:
                 for s in searches:
@@ -92,10 +92,10 @@ def print_saved_pages(do_formatting=True) -> int:
         if do_formatting:
                 groups = __group_by_dates(pages)
 
-                for date, text_list in groups.items():
+                for date, page_names in groups.items():
                         print("\033[1;31m" + date + "\033[m")
-                        for t in text_list:
-                                output_str = "\033[35;2m" + "▏   " + t[1] + "\033[22m" + " " + f"{t[0]}" + "\033[0m" + "\033[0m"
+                        for p in page_names:
+                                output_str = "\033[35;2m" + "▏   " + p[1] + "\033[22m" + " " + f"{p[0]}" + "\033[0m" + "\033[0m"
                                 print(output_str)
         else:
                 for p in pages:
