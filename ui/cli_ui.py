@@ -35,7 +35,7 @@ def print_help_msg() -> None:
         return
 
 def __group_by_dates(list:list[tuple]) -> dict:
-        """Groups tuples with text and datetime into a dictionary by date as tuples containing text and time. 
+        """Groups tuples with id, text, datetime and count, into a dictionary by date id, text, time and count. 
 
         Util for nicer printing for print_saved_searches and print_saved_pages functions.
         """
@@ -65,9 +65,9 @@ def __group_consecutive_searches(searches:list[tuple]):
         searches = searches.copy()
         grouped_searches = []
 
-        prev_search = ("","")
+        prev_search = searches.pop(0)
+        first_search_datetime = prev_search[2]
         search_count = 1
-        first_search_datetime = None
 
         while len(searches) > 0:
                 cur_search = searches.pop(0)
@@ -76,12 +76,13 @@ def __group_consecutive_searches(searches:list[tuple]):
                         search_count += 1
                         prev_search = cur_search
                         continue
-                else:
-                        first_search_datetime = cur_search[2]
-                        prev_search = cur_search
 
-                grouped_searches.append((cur_search[0], cur_search[1], first_search_datetime, search_count))
+                grouped_searches.append((prev_search[0], prev_search[1], first_search_datetime, search_count))
+                prev_search = cur_search
+                first_search_datetime = prev_search[2]
                 search_count = 1
+
+        grouped_searches.append((cur_search[0], cur_search[1], cur_search[2], search_count))
 
         return grouped_searches
 
@@ -110,6 +111,9 @@ def print_saved_searches(do_formatting=True) -> int:
                                 else:
                                         output_str = "\033[35;2m" + time + "\033[22m" + " " + f"{text}" + f"({count})" + "\033[0m"
                                 print(output_str)
+
+                                last_s = s
+                print("count: " + last_s[0])
         else:
                 for s in searches:
                         values = [ str(value) for value in list(s) ]
@@ -137,6 +141,10 @@ def print_saved_pages(do_formatting=True) -> int:
                                 id,name,datetime = p[0], p[1], ":".join(p[2].split(":")[:2])
                                 output_str = "\033[35;2m" + datetime + "\033[22m" + " " + f"{name}" + "\033[0m"
                                 print(output_str)
+
+                                last_p = p
+                        
+                print("count: " + last_p[0])
         else:
                 for p in pages:
                         values = [ str(value) for value in list(p) ]
@@ -163,3 +171,25 @@ def print_sections(sections:list[Section], lang, print_tree=False, do_formatting
                 print( sect_str+'\n\n' if sect_str is not None else "None", end="")
 
                 return 0
+
+
+
+# move section parsing elsewhere and add printing here.
+def print_translations(sections:list[Section], target_lang:str) -> dict:
+        translations = {}
+        for s in sections:
+
+                lines = s.content.splitlines()
+                cur_tr_top = ""
+                for l in lines:
+                        if l.strip().startswith("{{trans-top"):
+                                cur_tr_top = l
+                                translations[cur_tr_top] = []
+                                continue
+                        elif l.strip().startswith("{{trans-bottom"):
+                                cur_tr_top = ""
+                                continue
+                        elif l.strip(" *").startswith(target_lang):
+                                translations[cur_tr_top].append(l)
+
+        return translations

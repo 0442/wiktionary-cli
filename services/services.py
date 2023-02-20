@@ -6,7 +6,7 @@ import tools.parsing_utils as parsing
 import tools.config as config
 from services.db import Database
 
-def __get_page_from_wiki(page_name:str, lang:str, site:str) -> Section:
+def __get_page_from_wiki(page_name:str, lang:str, site:str) -> WikiParser:
         wiki = WikiApi(lang, site)
         page_info = wiki.get_page(page_name)
 
@@ -159,3 +159,13 @@ def translation(args:list[str]) -> int:
                 print()
 
                 return 1
+
+        page = __get_page_from_wiki(word,from_lang,"wiktionary")
+        tr_section_path = languages.abbrev_table[from_lang][from_lang] + "/Translations"
+        sections = __get_matching_sections(page, tr_section_path, from_lang)
+
+        tr = cli_ui.print_translations(sections, languages.abbrev_table[from_lang][to_lang])
+        for k,v in tr.items():
+                print(k)
+                for t in v:
+                        print(t)
