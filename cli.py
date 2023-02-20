@@ -17,7 +17,7 @@ def main() -> int:
         valid_options = ["-r", "--raw", "-h", "--help", "-s", "--searches", "-p", "--pages"]
         invalid_opts  = [opt for opt in options if opt not in valid_options]
         if invalid_opts:
-                print( f"Invalid options: { ', '.join(invalid_opts) }\n" ) if len(invalid_opts) > 0 else None
+                print( f"Unknown options: { ', '.join(invalid_opts) }\n" ) if len(invalid_opts) > 0 else None
                 cli_ui.print_help_msg()
                 return 1
 
