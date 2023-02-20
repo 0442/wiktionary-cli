@@ -17,7 +17,7 @@ def main() -> int:
 
         # handle options
 
-        valid_options = ["-r", "--raw", "-h", "--help", "-s", "--searches", "-p", "--pages"]
+        valid_options = ["-r", "--raw", "-h", "--help", "-s", "--searches", "-p", "--pages", "-f", "--force-web"]
         invalid_opts  = [opt for opt in options if opt not in valid_options]
         if invalid_opts:
                 print( f"Unknown options: { ', '.join(invalid_opts) }\n" ) if len(invalid_opts) > 0 else None
@@ -29,6 +29,7 @@ def main() -> int:
                 return 0
 
         do_formatting = False if "-r" in options or "--raw" in options else True
+        force_web = True if "-f" in options or "--force-web" in options else False
 
         if "-s" in options or "--searches" in options:
                 # TODO: option to group output by search word and count similar ones
@@ -36,7 +37,7 @@ def main() -> int:
 
         if "-p" in options or "--pages" in options:
                 return cli_ui.print_saved_pages(do_formatting=do_formatting)
-
+        
 
 
         # handle positional args
@@ -50,7 +51,7 @@ def main() -> int:
         wiki_mode_names = ["w", "wiki", "wikipedia"]
 
         if positional_args[0] in dict_mode_names:
-                return services.get_dictionary_entry(positional_args[1:], do_formatting = do_formatting)
+                return services.get_dictionary_entry(positional_args[1:], do_formatting = do_formatting, force_web=force_web)
 
         elif positional_args[0] in translate_mode_names:
                 return services.translate_word(positional_args[1:])

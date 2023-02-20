@@ -15,7 +15,7 @@ def print_supported_languages() -> None:
         return
 
 def print_help_msg() -> None:
-        print("Wiktionary-cli - cli dictionary and translator based on wiktionary entries.")
+        print("Wiktionary-cli - cli dictionary based on wiktionary entries.")
         print("")
         print("Usage:")
         print("  sanakirja dictionary|dict|d <lang> <title> [<section-path>|definitions|defs]")
@@ -27,6 +27,7 @@ def print_help_msg() -> None:
         print("  -s --searches  Print saved searches and exit.")
         print("  -p --pages     Print saved pages and exit.")
         print("  -r --raw       Don't format output.")
+        print("  -f --force-web Get the page from wiki and update local copy if saving is enabled in config.")
         print_supported_languages()
 
         return
