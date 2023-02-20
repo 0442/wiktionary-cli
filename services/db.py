@@ -51,18 +51,18 @@ class Database():
 
         limit: maximum number of pages to fetch. If no limit given, returns all pages.
 
-        returns a list  of tuples containing the page's name and datetime (of when the page was added to db). The list is in the same order where the pages' first versions were added to db.
+        returns a list  of tuples containing the page's id, name and datetime (of when the page was added to db). The list is in the same order in which the pages' first versions were added to db.
         returns None if no pages found.
 
         Pages are returned even if DB_SAVE_PAGES is set to False in config. 
         To delete saved searches, use clear_pages().
         """
         if limit == None:
-            pages = self.__db.execute("SELECT P.name, P.datetime FROM Pages P ORDER BY P.id DESC").fetchall()
+            pages = self.__db.execute("SELECT P.id, P.name, P.datetime FROM Pages P ORDER BY P.id ASC").fetchall()
         elif limit <= 0:
             raise ValueError
         else:
-            pages = self.__db.execute("SELECT S.name FROM Pages P ORDER BY P.id DESC LIMIT ?", [limit]).fetchall()
+            pages = self.__db.execute("SELECT P.id, S.name FROM Pages P ORDER BY P.id DESC LIMIT ?", [limit]).fetchall()
 
         if pages == None:
             return None
@@ -74,18 +74,18 @@ class Database():
 
         limit: maximum number of searches to fetch. If no limit given, returns all searches.
 
-        returns a list of tuples with search str and search datetime in descending order (from newest to oldest).
+        returns a list of tuples with id, text and datetime in ascending order (from oldest to newest).
         returns None if no searches found.
 
         Searches are returned even if DB_SAVE_SEARCHES is set to False in config. 
         To delete saved searches, use clear_searches().
         """
         if limit == None:
-            searches = self.__db.execute("SELECT S.text, S.datetime FROM Searches S ORDER BY S.id DESC").fetchall()
+            searches = self.__db.execute("SELECT S.id, S.text, S.datetime FROM Searches S ORDER BY S.id ASC").fetchall()
         elif limit <= 0:
             raise ValueError
         else:
-            searches = self.__db.execute("SELECT S.text, S.datetime FROM Searches S ORDER BY S.id DESC LIMIT ?", [limit]).fetchall()
+            searches = self.__db.execute("SELECT S.id, S.text, S.datetime FROM Searches S ORDER BY S.id DESC LIMIT ?", [limit]).fetchall()
 
         if searches == None:
             return None
