@@ -8,12 +8,11 @@ definitions = {
                 "Adpositio", "Prepositio", "Postpositio", 
                 "Partisiippi", "Pronomini", "Verbi", "Interjektio", "Proper noun"
         ],
-        "sv" : [""],
 }
 
 supported = ["en", "fi"]
 
-# lookup tables for how languages used in e.g. titles are written in different languages in wiki.
+# lookup tables for how languages
 abbrev_table = {
         "en" : {
                 "en" : "English",
@@ -26,10 +25,4 @@ abbrev_table = {
                 "fi" : "Suomi",
                 "sv" : "Ruotsi", 
         },
-
-        "sv" : {
-                "en" : "engelska",
-                "fi" : "finska",
-                "sv" : "svenska",
-        }
 }
