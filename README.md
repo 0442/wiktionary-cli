@@ -1,2 +1,2 @@
 # wiktionary-cli
-Command-line tool for quickly looking up definitions of words from wiktionary.
+Command-line program for quickly looking up definitions of words from wiktionary.
