@@ -17,12 +17,10 @@ abbrev_table = {
         "en" : {
                 "en" : "English",
                 "fi" : "Finnish",
-                "sv" : "Swedish",
         },
 
         "fi" : {        
                 "en" : "Englanti",
                 "fi" : "Suomi",
-                "sv" : "Ruotsi", 
         },
 }
