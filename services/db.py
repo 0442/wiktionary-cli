@@ -23,7 +23,7 @@ class Database():
         self.__create_tables()
 
     def __create_tables(self) -> None:
-        # TODO: add support for wiki pages in addition to dictionary pages
+        # TODO: add support for wiki pages and translations in addition to dictionary pages
         try:
             self.__db.execute("CREATE TABLE Pages (id INTEGER PRIMARY KEY, name TEXT UNIQUE, content TEXT, datetime DATETIME)")
             self.__db.execute("CREATE INDEX idx_name ON Pages (name)")
