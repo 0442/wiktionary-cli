@@ -17,20 +17,29 @@ def main() -> int:
         valid_options = ["-r", "--raw", "-h", "--help", "-s", "--searches", "-p", "--pages"]
         invalid_opts  = [opt for opt in options if opt not in valid_options]
         if invalid_opts:
-                print( f"Invalid options: { ', '.join(invalid_opts) }.\n" ) if len(invalid_opts) > 0 else None
+                print( f"Invalid options: { ', '.join(invalid_opts) }\n" ) if len(invalid_opts) > 0 else None
+                cli_ui.print_help_msg()
                 return 1
 
+
+
+        do_formatting = False if "-r" in options or "--raw" in options else True
         # handle options
         if "-h" in options or "--help" in options:
                 cli_ui.print_help_msg()
                 return 0
 
         if "-s" in options or "--searches" in options:
-                return cli_ui.print_saved_searches()
+                return cli_ui.print_saved_searches(do_formatting=do_formatting)
 
         if "-p" in options or "--pages" in options:
-                return cli_ui.print_saved_pages()
+                return cli_ui.print_saved_pages(do_formatting=do_formatting)
 
+
+
+        if len(positional_args) == 0:
+                cli_ui.print_help_msg()
+                return 1
 
         # check and run function for given mode
         translate_mode_names = ["t", "tr", "translate"]
@@ -39,7 +48,7 @@ def main() -> int:
 
         # run in dictionary mode
         if positional_args[0] in dict_mode_names:
-                return services.get_dictionary_entry(positional_args[1:], do_formatting = (False if "-r" in options or "--raw" in options else True))
+                return services.get_dictionary_entry(positional_args[1:], do_formatting = do_formatting)
         # run in translator mode
         elif positional_args[0] in translate_mode_names:
                 return services.translate_word(positional_args[1:])
