@@ -23,16 +23,14 @@ def print_help_msg() -> None:
         print("  sanakirja article|wikipedia|wiki|w <lang> <title> [<section-path>]")
         print("")
         print("Options:")
-        print("  -h --help      Show this screen.")
-        print("  -s --searches  Print saved searches and exit.")
-        print("  -p --pages     Print saved pages and exit.")
-        print("  -r --raw       Don't format output.")
-        print("  -f --force-web Get the page from wiki and update local copy if saving is enabled in config.")
+        print("  -h --help            Show this screen.")
+        print("  -r --raw             Don't format output.")
+        print("  -s --search          Search wiki instead of fetching a page.")
+        print("  -f --force-web       Get page from wiki and update local copy if saving is enabled in config.")
+        print("  -ls --list-searches  Print saved searches and exit.")
+        print("  -lp --list-pages     Print saved pages and exit.")
         print_supported_languages()
-
         return
-
-
 
 def __group_by_dates(list:list[tuple]) -> dict:
         """Groups tuples with text and datetime into a dictionary by date as tuples containing text and time. 
@@ -78,7 +76,6 @@ def print_saved_searches(do_formatting=True) -> int:
 
         return 0
         
-
 def print_saved_pages(do_formatting=True) -> int:
         """Print pages that are saved into the local database
         """

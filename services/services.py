@@ -61,7 +61,7 @@ def get_wiki_page(args:list[str], do_formatting=True, force_web=False) -> int:
         return 0
 
 
-def get_dictionary_entry(args:list[str], do_formatting=True, force_web=False) -> int:
+def get_dictionary_entry(args:list[str], do_formatting=True, force_web=False, do_search=False) -> int:
 
         if len(args) < 2:
                 cli_ui.print_help_msg()
@@ -80,9 +80,19 @@ def get_dictionary_entry(args:list[str], do_formatting=True, force_web=False) ->
                 return 1
 
 
-        # try to find the page from local db, else get it from wiki + save search
+                
+
         db = Database()
         db.save_search(word)
+        if do_search:
+                wiki = WikiApi(lang, "wiktionary")
+                results = wiki.search(word)
+                if not results:
+                        return 1
+                [print(r) for r in results]
+                return 0
+
+        # try to find the page from local db, else get it from wiki
         page = db.load_page(word)
 
         if not page or force_web:
