@@ -35,12 +35,13 @@ def print_help_msg() -> None:
 
 def __group_by_dates(list:list[tuple]) -> dict:
         """Groups tuples with text and datetime into a dictionary by date as tuples containing text and time. 
-        Util for print_saved_searches and print_saved_pages.
+        Util for nicer printing for print_saved_searches and print_saved_pages functions.
         """
         date_groups = {}
         for l in list:
-                text = l[0]
-                datetime = l[1]
+                #id = l[0]
+                text = l[1] 
+                datetime = l[2] 
                 date = datetime.split(" ")[0]
                 time = datetime.split(" ")[1]
 
@@ -52,6 +53,9 @@ def __group_by_dates(list:list[tuple]) -> dict:
         return date_groups
 
 def print_saved_searches(do_formatting=True) -> int:
+        """Print searches that are saved into the database
+        """
+        
         db = Database()
         searches = db.get_saved_searches()
         if not searches:
@@ -68,12 +72,16 @@ def print_saved_searches(do_formatting=True) -> int:
                                 print(output_str)
         else:
                 for s in searches:
-                        print("|".join(list(s)))
+                        values = [ str(value) for value in list(s) ]
+                        print("|".join(values))
 
         return 0
         
 
 def print_saved_pages(do_formatting=True) -> int:
+        """Print pages that are saved into the local database
+        """
+
         db = Database()
         pages = db.get_saved_pages()
         if not pages:
@@ -91,6 +99,7 @@ def print_saved_pages(do_formatting=True) -> int:
                                 print(output_str)
         else:
                 for p in pages:
-                        print("|".join(list(p)))
+                        values = [ str(value) for value in list(p) ]
+                        print("|".join(values))
 
         return 0
