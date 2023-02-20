@@ -120,7 +120,7 @@ class Database():
             self.__db.execute("INSERT INTO Pages (name, content, datetime) VALUES (?, ?, DATETIME('now', 'localtime'))", [page_name, page_content])
 
         except sqlite3.IntegrityError: # update page if it's already saved
-            self.__db.execute("UPDATE Pages SET content = ?, datetime = DATETIME('now', 'localtime') WHERE LOWER(name) = ?", [page_content, page_name.lower()])
+            self.__db.execute("UPDATE Pages SET content = ?, datetime = DATETIME('now', 'localtime') WHERE name = ?", [page_content, page_name])
 
     def page_needs_update(self, date:datetime) -> bool:
         expiration_time = cfg_parser.expiration_time_to_seconds(config.DB_PAGE_EXPIRATION_TIME)
@@ -141,12 +141,12 @@ class Database():
         - the requested page's addition datetime exceeds the DB_PAGE_EXPIRATION_TIME defined in config 
         - DB_USE_SAVED_PAGES is set to False in config
 
-        Matches page names case insensitively.
+        Page name matching is case sensitive.
         """
         if config.DB_USE_SAVED_PAGES == False:
             return None
 
-        page = self.__db.execute("SELECT P.name, P.content, P.datetime FROM Pages P WHERE LOWER(p.name) = ?", [page_name.lower()]).fetchone()
+        page = self.__db.execute("SELECT P.name, P.content, P.datetime FROM Pages P WHERE p.name = ?", [page_name]).fetchone()
         if page == None:
             return None
 
