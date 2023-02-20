@@ -5,7 +5,7 @@ class Section:
                 self.__children = children
                 self.__content = content
                 self.__depth = int(title.count("=") / 2)
-                self.__title = title.replace("=","").replace("}","").replace("{","")
+                self.__title = title.replace("=","").replace("}","").replace("{","").strip()
 
         @property
         def title(self) -> str:
