@@ -170,7 +170,7 @@ def print_sections(sections:list[Section], lang, print_tree=False, do_formatting
 
                 print( sect_str+'\n\n' if sect_str is not None else "None", end="")
 
-                return 0
+        return 0
 
 
 
