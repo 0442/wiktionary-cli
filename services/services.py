@@ -12,7 +12,7 @@ def __get_page_from_wiki(page_name:str, lang:str, site:str) -> WikiParser:
 
         if not page_info[0]:
                 cli_ui.word_not_found(page_name, lang)
-                return 1
+                return None
         
         page_title = page_info[0]
         page_id = page_info[1]
@@ -88,6 +88,9 @@ def dictionary(args:list[str], do_formatting=True, force_web=False, do_search=Fa
 
         if not page or force_web:
                 page = __get_page_from_wiki(word, lang, "wiktionary")
+                if not page:
+                        return 1
+
                 db.save_page(page)
 
         matching_sects = __get_matching_sections(page, target_path, lang)
