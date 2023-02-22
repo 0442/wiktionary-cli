@@ -60,7 +60,7 @@ def __get_matching_sections(page:WikiParser, target_path:str, lang:str) -> list[
 
 
 
-def dictionary(args:list[str], do_formatting=True, force_web=False, do_search=False) -> int:
+def dictionary(args:list[str], do_formatting=True, force_web=False, do_search=False) -> tuple[list[Section], str, bool]:
         if len(args) < 2:
                 cli_ui.print_help_msg()
                 exit(1)
@@ -102,10 +102,10 @@ def dictionary(args:list[str], do_formatting=True, force_web=False, do_search=Fa
         else:
                 print_tree = False
 
-        return cli_ui.print_sections(matching_sects, lang, print_tree=print_tree, do_formatting=do_formatting)
+        return (matching_sects, lang, print_tree)
 
 
-def wikipedia(args:list[str], do_formatting=True, force_web=False, do_search=False) -> int:
+def wikipedia(args:list[str], do_formatting=True, force_web=False, do_search=False) -> tuple[list[Section], str, bool]:
         # TODO implement database
 
         if len(args) < 2:
@@ -136,7 +136,7 @@ def wikipedia(args:list[str], do_formatting=True, force_web=False, do_search=Fal
         else:
                 print_tree = False
 
-        return cli_ui.print_sections(matching_sects, lang, print_tree=print_tree, do_formatting=do_formatting)
+        return (matching_sects, lang, print_tree)
 
 
 

@@ -55,13 +55,15 @@ def main() -> int:
         wiki_mode_names = ["w", "wiki", "wikipedia"]
 
         if positional_args[0] in dict_mode_names:
-                return services.dictionary(positional_args[1:], do_formatting = do_formatting, force_web=force_web, do_search=do_search)
+                args = services.dictionary(positional_args[1:], force_web=force_web, do_search=do_search)
+                return cli_ui.print_sections(*args, do_formatting=do_formatting)
 
         elif positional_args[0] in translate_mode_names:
                 return services.translation(positional_args[1:])
 
         elif positional_args[0] in wiki_mode_names:
-                return services.wikipedia(positional_args[1:])
+                args = services.wikipedia(positional_args[1:], force_web=force_web, do_search=do_search)
+                return cli_ui.print_sections(*args, do_formatting=do_formatting)
 
         else:
                 cli_ui.print_help_msg()
