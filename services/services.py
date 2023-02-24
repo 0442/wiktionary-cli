@@ -1,10 +1,13 @@
-from tools.wikiparser import WikiPage, Section
+from tools.wikiparser import *
+from tools import languages
+from tools import parsing_utils as parsing
+from tools import config
+from tools import options
+
 from services.wiki_api import WikiApi
-import ui.cli_ui as cli_ui
-import tools.languages as languages
-import tools.parsing_utils as parsing
-import tools.config as config
 from services.db import Database
+
+from ui import cli_ui
 
 def __get_page_from_wiki(page_name:str, lang:str, site:str) -> WikiPage:
         wiki = WikiApi(lang, site)
@@ -18,7 +21,7 @@ def __get_page_from_wiki(page_name:str, lang:str, site:str) -> WikiPage:
         page_id = page_info[1]
         page_text = page_info[2]
 
-        page = WikiPage(page_text, page_title, lang)
+        page = WikiPage(page_text, page_title, lang, site)
 
         return page
 
@@ -32,7 +35,7 @@ def __search_wiki(search:str, lang:str, site:str) -> int:
 
 
 
-def wiki_page(args:list[str], site:str, force_web=False, do_search=False) -> WikiPage | None:
+def wiki_page(args:list[str], site:str) -> WikiPage | None:
         if len(args) < 2:
                 cli_ui.print_help_msg()
                 exit(1)
@@ -47,14 +50,14 @@ def wiki_page(args:list[str], site:str, force_web=False, do_search=False) -> Wik
         db = Database()
         db.save_search(word, "dictionary", lang)
 
-        if do_search:
+        if options.do_search:
                 __search_wiki(word, lang, site)
                 return None
 
         # try to find the page from local db, else get it from wiki
-        page = db.load_page(word, lang)
+        page = db.load_page(word, lang, site)
 
-        if not page or force_web:
+        if not page or options.force_web:
                 page = __get_page_from_wiki(word, lang, site)
                 if not page:
                         return None

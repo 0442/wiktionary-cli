@@ -2,6 +2,7 @@ import tools.languages as languages
 from services.db import Database
 from tools.wikiparser import WikiPage, Section
 import tools.parsing_utils as parsing
+from tools import options 
 
 # Functions for printing some output
 def word_not_found(word:str, search_lang:str) -> None:
@@ -25,16 +26,15 @@ def print_help_msg() -> None:
         print("  sanakirja article|wikipedia|wiki|w <lang> <title> [<section-path>]")
         print("")
         print("Options:")
-        print("  -h --help            Show this screen.")
-        print("  -r --raw             Don't format output.")
-        print("  -s --search          Search wiki instead of fetching a page.")
-        print("  -f --force-web       Get page from wiki and update local copy if saving is enabled in config.")
-        print("  -ls --list-searches  Print saved searches and exit.")
-        print("  -lp --list-pages     Print saved pages and exit.")
+        for opt_names, opt_desc in options.valid_options.items(): 
+                options_str = " ".join(opt_names)
+                left_offset = (21 - len(options_str)) * " "
+                print("  " + options_str + left_offset + opt_desc)
+
         print_supported_languages()
         return
 
-def print_saved_searches(do_formatting=True) -> int:
+def print_saved_searches() -> int:
         """Print searches that are saved into the database
         """
 
@@ -44,7 +44,7 @@ def print_saved_searches(do_formatting=True) -> int:
                 print("No saved searches.")
                 return 1
 
-        if do_formatting:
+        if options.do_formatting:
                 search_groups = __group_consecutive_searches(searches)
                 date_groups = __group_by_dates(search_groups)
 
@@ -67,7 +67,7 @@ def print_saved_searches(do_formatting=True) -> int:
 
         return 0
         
-def print_saved_pages(do_formatting=True) -> int:
+def print_saved_pages() -> int:
         """Print pages that are saved into the local database
         """
 
@@ -78,7 +78,7 @@ def print_saved_pages(do_formatting=True) -> int:
                 return 1
 
 
-        if do_formatting:
+        if options.do_formatting:
                 groups = __group_by_dates(pages)
 
                 for date, page_names in groups.items():
@@ -98,10 +98,10 @@ def print_saved_pages(do_formatting=True) -> int:
 
         return 0
 
-def print_sections(page:WikiPage, path:str, do_formatting=True):
+def print_sections(page:WikiPage, path:str):
         # Only print page structure (__str__ of page's root section) when no path given
         if not path:
-                if not do_formatting:
+                if not options.do_formatting:
                         print(page.root_section)
                         return 0
 
@@ -126,7 +126,7 @@ def print_sections(page:WikiPage, path:str, do_formatting=True):
                 return 0
 
         for sect in matching_sects:
-                if do_formatting:
+                if options.do_formatting:
                         sect_str = parsing.format_section_content(sect, page.language)
                 else:
                         sect_str = sect.content
