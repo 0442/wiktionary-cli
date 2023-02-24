@@ -110,7 +110,7 @@ def __join_multiline_brackets(lines:list) -> list:
         prev_line = lines.pop(0)
         while len(lines) > 0:
                 curr_line = lines.pop(0)
-                if curr_line.startswith("|"):
+                if re.match("^[ \| }} \]\] ]", curr_line):
                         prev_line += curr_line
                         continue
                 
@@ -213,7 +213,12 @@ def __format_curly_bracketed_str(bracketed_str:str) -> str:
                         formatted_str += "(Quote text "
 
                 formatted_str += f'"{title}", {year})\033[22m "{quote}"'
+                formatted_str = ""
                 return formatted_str
+        
+        # citations
+        if "Cite-web" in sections or ... in sections or ... in sections:
+                ...
 
         sections.remove("en") if "en" in sections else None
         sections.remove("lb") if "lb" in sections else None
@@ -230,6 +235,10 @@ def __format_curly_bracketed_str(bracketed_str:str) -> str:
         if "ux" in sections:
                 sections.remove("ux")
                 return "\033[3;31m" + ", ".join(sections) + "\033[23;39m"
+
+        # wikipedia articles?
+        if "w" in sections:
+                return "\033[31m" + sections[len(sections)-1] + "\033[39m"
         
 
         formatted_str = "\033[3;31m(" + ", ".join(sections) + ")\033[23;39m"

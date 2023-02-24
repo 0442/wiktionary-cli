@@ -1,4 +1,5 @@
 import re
+import tools.languages as languages
 
 class Section:
         def __init__(self, title:str, content:str, children:list=[]) -> 'Section':
@@ -84,19 +85,20 @@ class Section:
                 return matches
 
         def __str__(self, relative_depth:int=1):
-                #string = (self.depth - 1) * "\033[2m▏  \033[0m" + self.__title
-                string = (relative_depth-1) * "\033[2m▏  \033[0m" + self.__title
+                #string = (relative_depth-1) * "\033[2m▏  \033[0m" + self.__title
+                string = (relative_depth-1) * "#" + self.__title
                 for child in self.__children:
                         string += '\n' + child.__str__(relative_depth=relative_depth+1)
 
                 return string
         
 
-class WikiParser:
-        def __init__(self, page_text:str, page_title:str) -> 'WikiParser':
-                self.__page_text = page_text
-                self.__page_title = page_title
-                self.__page_root_section = self.__split_into_sections()
+class WikiPage:
+        def __init__(self, page_text:str, page_title:str, language:str) -> 'WikiPage':
+                self.__text = page_text
+                self.__title = page_title
+                self.__language = language
+                self.__root_section = self.__split_into_sections()
 
         def __get_children(self, section_tuples:list, child_depth:int=1) -> Section:
                 """ Recursively arrange a dictionary of wiki titles and their contents into a parent-child tree.
@@ -126,11 +128,9 @@ class WikiParser:
 
 
         def __split_into_sections(self) -> Section:
-                """ Parse wiki page into a section object
+                """ Parse wiki page's content into a section object
                 """
-                # Note: using 'title' and 'title' synonymously in comments ie. Referring to the same thing with both words.
-
-                title_matches = list(re.finditer("^=+" + "[^=]+" + "=+$", self.__page_text, re.MULTILINE))
+                title_matches = list(re.finditer("^=+" + "[^=]+" + "=+$", self.__text, re.MULTILINE))
 
                 # get the starting and ending positions for each title
                 section_spans = [(0,0)]         # Pages from wiktionary api don't contain the page's main title. Pages don't often start with a subtitle, but rather with some info right under the main title. 
@@ -138,19 +138,16 @@ class WikiParser:
                 for m in title_matches:
                         section_spans.append(m.span())
 
-
-                # Get title names.
                 # Note:
                 # Number of '=' signs in title indicates the 'depth' of the title, 
                 # ie. how many parent titles it has (including itself), 
                 # eg. "==Translations==" has depth 2, meaning its a subtitle of the outer most title, the main title, which has depth 1.
-                titles = ["=" + self.__page_title + "="]  # name for the main title 
+                titles = ["=" + self.__title + "="]  # name for the main title 
                 for s in section_spans:
-                        title = self.__page_text[s[0] : s[1]]
+                        title = self.__text[s[0] : s[1]]
                         if title != '':
                                 titles.append(title.strip())
                 
-                # Section contents
                 sections = []
                 for s_i in range(0, len(section_spans)):
                         start = section_spans[s_i][1]
@@ -158,12 +155,12 @@ class WikiParser:
 
                         # if at last title, where no next title to stop at:
                         if s_i + 1 >= len(section_spans):
-                                section_content = self.__page_text[start :]
+                                section_content = self.__text[start :]
 
                         # otherwise use the next title's beginning as stop:
                         else:
                                 end = section_spans[s_i + 1][0]
-                                section_content = self.__page_text[start : end].strip()
+                                section_content = self.__text[start : end].strip()
                         
                         sections.append( (section_title, section_content) )
 
@@ -172,13 +169,55 @@ class WikiParser:
 
                 return page_root_section[0]
         
+        def find_page_sections(self, path:str) -> list[Section] | None:
+                """Find sections from this page.
+
+                Returns a list of sections that match the path/search. If no matches are found, returns None
+
+                Path can either be a path to a section or a keyword that matches a group of sections, e.g. 'definitions' for wiktionary pages, which matches Noun, Verb, etc.. sections
+                """
+
+                root_section = self.__root_section
+
+                matching_sections = []
+
+                if path.lower() == "definitions" or path.lower() == "defs":
+                        for wc in languages.definitions[self.__language]:
+                                target_sect = root_section.find(languages.abbrev_table[self.__language][self.__language] + "/" + wc)
+                                if target_sect:
+                                        matching_sections.append(target_sect)
+                        
+
+                else:
+                        target_sect = root_section.find(path)
+                        if target_sect:
+                                matching_sections.append(target_sect)
+
+                return matching_sections
+        
+        def __str__(self):
+                def add_sect_content(sect:Section) -> str:
+                        page_str = ""
+                        print(len(sect.children))
+                        if len(sect.children) != 0:
+                                for c in sect.children:
+                                        page_str += add_sect_content(c)
+
+                        return sect.content + page_str
+
+                return add_sect_content(self.__root_section)
+
+        
         
         @property
-        def page_root_section(self) -> Section:
-                return self.__page_root_section
+        def root_section(self) -> Section:
+                return self.__root_section
         @property
-        def page_text(self) -> str:
-                return self.__page_text
+        def text(self) -> str:
+                return self.__text
         @property
-        def page_title(self) -> str:
-                return self.__page_title
+        def title(self) -> str:
+                return self.__title
+        @property
+        def language(self) -> str:
+                return self.__language

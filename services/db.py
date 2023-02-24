@@ -3,7 +3,7 @@ import os
 from datetime import datetime
 
 import tools.config as config
-from tools.wikiparser import *
+from tools.wikiparser import WikiPage, Section
 import tools.cfg_parsing_utils as cfg_parser
 
 class Database():
@@ -22,22 +22,46 @@ class Database():
         self.__db.execute("PRAGMA foreign_keys = ON") # currently unused
         self.__create_tables()
 
+
+
+
     def __create_tables(self) -> None:
         # TODO: add support for wiki pages and translations in addition to dictionary pages
+        sql_create_pages_table = """
+            CREATE TABLE Pages (
+                id INTEGER PRIMARY KEY, 
+                name TEXT, 
+                language TEXT,
+                content TEXT, 
+                datetime DATETIME,
+                CONSTRAINT uq_Pages UNIQUE(name, language)
+            )
+        """
+        sql_create_searches_table ="""
+            CREATE TABLE Searches (
+                id INTEGER PRIMARY KEY, 
+                text TEXT, 
+                datetime DATETIME
+            )
+        """
         try:
-            self.__db.execute("CREATE TABLE Pages (id INTEGER PRIMARY KEY, name TEXT UNIQUE, content TEXT, datetime DATETIME)")
+            self.__db.execute(sql_create_pages_table)
             self.__db.execute("CREATE INDEX idx_name ON Pages (name)")
-
-        except sqlite3.OperationalError:
-            pass
+        except sqlite3.OperationalError as e:
+            if "already exists" not in e.__str__():
+                raise e
 
         try:
-            self.__db.execute("CREATE TABLE Searches (id INTEGER PRIMARY KEY, text TEXT, datetime DATETIME)")
-        except sqlite3.OperationalError:
-            pass
+            self.__db.execute(sql_create_searches_table)
+        except sqlite3.OperationalError as e:
+            if "already exists" not in e.__str__():
+                raise e
 
-    def save_search(self, search:str) -> None:
-        """Save a search to local database for later use.
+
+
+
+    def save_search(self, search:str, action:str, lang:str) -> None:
+        """Save a search to local database.
 
         If DB_SAVE_SEARCHES is set to False in config, search is not saved.
         """
@@ -45,7 +69,59 @@ class Database():
             return None
 
         self.__db.execute("INSERT INTO Searches (text, datetime) VALUES (?, DATETIME('now', 'localtime'))", [search])
+
+    def save_page(self, page:WikiPage) -> None:
+        """Save a wikipage to local database.
+
+        If DB_SAVE_PAGES is set to False in config, page is not saved.
+        """
+        if config.DB_SAVE_PAGES == False:
+            return None
+
+        try:
+            self.__db.execute("INSERT INTO Pages (name, language, content, datetime) VALUES (?, ?, ?, DATETIME('now', 'localtime'))", [page.title, page.language, page.text])
+
+        except sqlite3.IntegrityError: # update page if it's already saved
+            self.__db.execute("UPDATE Pages SET content = ?, datetime = DATETIME('now', 'localtime') WHERE name = ?", [page.text, page.title])
+
+
+
+
+    def load_page(self, page_name:str, page_language:str) -> WikiPage | None:
+        """Load a wikipage from local database.
+
+        Returns None if:
+        - the requested page doesn't exist in database 
+        - the requested page's addition datetime exceeds the DB_PAGE_EXPIRATION_TIME defined in config 
+        - DB_USE_SAVED_PAGES is set to False in config
+
+        Page name matching is case sensitive.
+        """
+        if config.DB_USE_SAVED_PAGES == False:
+            return None
+
+        sql_get_page = """
+            SELECT 
+                P.name, P.content, P.language, P.datetime 
+            FROM 
+                Pages P 
+            WHERE 
+                P.name = ? AND P.language = ?
+        """
+        page = self.__db.execute(sql_get_page, [page_name, page_language]).fetchone()
+        if page == None:
+            return None
+
+        title, text, language, date = page[0], page[1], page[2], datetime.fromisoformat(page[3])
+
+        if  self.page_needs_update(date):
+            return None
+        else:
+            return WikiPage(text, title, language)
     
+
+
+
     def get_saved_pages(self, limit:int=None) -> list[tuple]:
         """Get saved pages from local database.
 
@@ -55,7 +131,7 @@ class Database():
         returns None if no pages found.
 
         Pages are returned even if DB_SAVE_PAGES is set to False in config. 
-        To delete saved searches, use clear_pages().
+        To delete saved pages, use clear_pages().
         """
         if limit == None:
             pages = self.__db.execute("SELECT P.id, P.name, P.datetime FROM Pages P ORDER BY P.id ASC").fetchall()
@@ -80,6 +156,7 @@ class Database():
         Searches are returned even if DB_SAVE_SEARCHES is set to False in config. 
         To delete saved searches, use clear_searches().
         """
+
         if limit == None:
             searches = self.__db.execute("SELECT S.id, S.text, S.datetime FROM Searches S ORDER BY S.id ASC").fetchall()
         elif limit <= 0:
@@ -93,11 +170,15 @@ class Database():
         return searches
 
 
+
+
     def clear_searches(self) -> None:
         """ Remove all searches from database.
         """
         self.__db.execute("DELETE FROM Searches")
         return
+
+    def remove_search(self,target) -> None:...
 
     def clear_saved_pages(self) -> None: 
         """ Remove all pages from database.
@@ -105,22 +186,10 @@ class Database():
         self.__db.execute("DELETE FROM Searches")
         return
 
-    def save_page(self, page:WikiParser) -> None:
-        """Save a wikipage to local database for later use.
+    def remove_saved_page(self,target) -> None:...
 
-        If DB_SAVE_PAGES is set to False in config, page is not saved.
-        """
-        if config.DB_SAVE_PAGES == False:
-            return None
 
-        page_name = page.page_title
-        page_content = page.page_text
 
-        try:
-            self.__db.execute("INSERT INTO Pages (name, content, datetime) VALUES (?, ?, DATETIME('now', 'localtime'))", [page_name, page_content])
-
-        except sqlite3.IntegrityError: # update page if it's already saved
-            self.__db.execute("UPDATE Pages SET content = ?, datetime = DATETIME('now', 'localtime') WHERE name = ?", [page_content, page_name])
 
     def page_needs_update(self, date:datetime) -> bool:
         expiration_time = cfg_parser.expiration_time_to_seconds(config.DB_PAGE_EXPIRATION_TIME)
@@ -128,31 +197,5 @@ class Database():
 
         if cur_page_archival_time > expiration_time:
             return True
-
         else:
             return False
-
-
-    def load_page(self, page_name:str) -> WikiParser | None:
-        """Load a wikipage from local database.
-
-        Returns None if:
-        - the requested page doesn't exist in database 
-        - the requested page's addition datetime exceeds the DB_PAGE_EXPIRATION_TIME defined in config 
-        - DB_USE_SAVED_PAGES is set to False in config
-
-        Page name matching is case sensitive.
-        """
-        if config.DB_USE_SAVED_PAGES == False:
-            return None
-
-        page = self.__db.execute("SELECT P.name, P.content, P.datetime FROM Pages P WHERE p.name = ?", [page_name]).fetchone()
-        if page == None:
-            return None
-
-        name, content, date = page[0], page[1], datetime.fromisoformat(page[2])
-
-        if  self.page_needs_update(date):
-            return None
-        else:
-            return WikiParser(content, name)

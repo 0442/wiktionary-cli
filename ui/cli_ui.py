@@ -1,6 +1,6 @@
 import tools.languages as languages
 from services.db import Database
-from tools.wikiparser import *
+from tools.wikiparser import WikiPage, Section
 import tools.parsing_utils as parsing
 
 # Functions for printing some output
@@ -33,60 +33,6 @@ def print_help_msg() -> None:
         print("  -lp --list-pages     Print saved pages and exit.")
         print_supported_languages()
         return
-
-def __group_by_dates(list:list[tuple]) -> dict:
-        """Groups tuples with id, text, datetime and count, into a dictionary by date id, text, time and count. 
-
-        Util for nicer printing for print_saved_searches and print_saved_pages functions.
-        """
-        date_groups = {}
-        for l in list:
-                id = str(l[0])
-                text = str(l[1])
-                datetime = str(l[2])
-                try:
-                        count = str(l[3])
-                except:
-                        count = None
-
-                date = datetime.split(" ")[0]
-                time = datetime.split(" ")[1]
-
-                try:
-                        date_groups[date].append((id,text,time,count))
-                except:
-                        date_groups[date] = [(id,text,time,count)]
-
-        return date_groups
-
-def __group_consecutive_searches(searches:list[tuple]):
-        """Groups similar consecutive searches and counts them for more compact output.
-        """
-        searches = searches.copy()
-        grouped_searches = []
-
-        prev_search = searches.pop(0)
-        first_search_datetime = prev_search[2]
-        search_count = 1
-
-        while len(searches) > 0:
-                cur_search = searches.pop(0)
-
-                if cur_search[1] == prev_search[1]:
-                        search_count += 1
-                        prev_search = cur_search
-                        continue
-
-                grouped_searches.append((prev_search[0], prev_search[1], first_search_datetime, search_count))
-                prev_search = cur_search
-                first_search_datetime = prev_search[2]
-                search_count = 1
-
-        grouped_searches.append((cur_search[0], cur_search[1], cur_search[2], search_count))
-
-        return grouped_searches
-
-
 
 def print_saved_searches(do_formatting=True) -> int:
         """Print searches that are saved into the database
@@ -152,27 +98,42 @@ def print_saved_pages(do_formatting=True) -> int:
 
         return 0
 
+def print_sections(page:WikiPage, path:str, do_formatting=True):
+        # Only print page structure (__str__ of page's root section) when no path given
+        if not path:
+                if not do_formatting:
+                        print(page.root_section)
+                        return 0
 
-
-def print_sections(sections:list[Section], lang, print_tree=False, do_formatting=True):
-        if print_tree:
-                for sect in sections:
-                        print(sect)
-                
+                lines = page.root_section.__str__().splitlines()
+                h = lines.pop(0) 
+                lines = parsing.__format_indents(lines)
+                print(h)
+                for l in lines:
+                        print(l)
                 return 0
 
+        matching_sects = page.find_page_sections(path)
 
-        for sect in sections:
+        if not matching_sects:
+                print(f"No matching sections for \"{path}\"")
+                return 1
+
+        # when path ends in '/', print matching sections' subsection structures
+        if path.endswith("/"):
+                for s in matching_sects:
+                        print(s)
+                return 0
+
+        for sect in matching_sects:
                 if do_formatting:
-                        sect_str = parsing.format_section_content(sect, lang)
+                        sect_str = parsing.format_section_content(sect, page.language)
                 else:
                         sect_str = sect.content
 
-                print( sect_str+'\n\n' if sect_str is not None else "None", end="")
+                print(sect_str + '\n\n' if sect_str is not None else "None", end="")
 
         return 0
-
-
 
 # move section parsing elsewhere and add printing here.
 def print_translations(sections:list[Section], target_lang:str) -> dict:
@@ -193,3 +154,58 @@ def print_translations(sections:list[Section], target_lang:str) -> dict:
                                 translations[cur_tr_top].append(l)
 
         return translations
+
+
+
+
+def __group_by_dates(list:list[tuple]) -> dict:
+        """Groups tuples with id, text, datetime and count, into a dictionary by date id, text, time and count. 
+
+        Util for nicer printing for print_saved_searches and print_saved_pages functions.
+        """
+        date_groups = {}
+        for l in list:
+                id = str(l[0])
+                text = str(l[1])
+                datetime = str(l[2])
+                try:
+                        count = str(l[3])
+                except:
+                        count = None
+
+                date = datetime.split(" ")[0]
+                time = datetime.split(" ")[1]
+
+                try:
+                        date_groups[date].append((id,text,time,count))
+                except:
+                        date_groups[date] = [(id,text,time,count)]
+
+        return date_groups
+
+def __group_consecutive_searches(searches:list[tuple]):
+        """Groups similar consecutive searches and counts them for more compact output.
+        """
+        searches = searches.copy()
+        grouped_searches = []
+
+        prev_search = searches.pop(0)
+        first_search_datetime = prev_search[2]
+        search_count = 1
+
+        while len(searches) > 0:
+                cur_search = searches.pop(0)
+
+                if cur_search[1] == prev_search[1]:
+                        search_count += 1
+                        prev_search = cur_search
+                        continue
+
+                grouped_searches.append((prev_search[0], prev_search[1], first_search_datetime, search_count))
+                prev_search = cur_search
+                first_search_datetime = prev_search[2]
+                search_count = 1
+
+        grouped_searches.append((cur_search[0], cur_search[1], cur_search[2], search_count))
+
+        return grouped_searches
