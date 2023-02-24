@@ -26,21 +26,25 @@ class Database():
 
 
     def __create_tables(self) -> None:
-        # TODO: add support for wiki pages and translations in addition to dictionary pages
         sql_create_pages_table = """
             CREATE TABLE Pages (
                 id INTEGER PRIMARY KEY, 
                 name TEXT, 
+                site TEXT,
                 language TEXT,
                 content TEXT, 
                 datetime DATETIME,
-                CONSTRAINT uq_Pages UNIQUE(name, language)
+
+                CONSTRAINT UC_Pages UNIQUE(name, language, site)
+                CONSTRAINT CHK_PageSite CHECK (site = 'wikipedia' OR site = 'wiktionary')
             )
         """
         sql_create_searches_table ="""
             CREATE TABLE Searches (
                 id INTEGER PRIMARY KEY, 
                 text TEXT, 
+                site TEXT,
+                language TEXT,
                 datetime DATETIME
             )
         """
@@ -60,7 +64,7 @@ class Database():
 
 
 
-    def save_search(self, search:str, action:str, lang:str) -> None:
+    def save_search(self, search:str, site:str, lang:str) -> None:
         """Save a search to local database.
 
         If DB_SAVE_SEARCHES is set to False in config, search is not saved.
@@ -68,7 +72,10 @@ class Database():
         if config.DB_SAVE_SEARCHES == False:
             return None
 
-        self.__db.execute("INSERT INTO Searches (text, datetime) VALUES (?, DATETIME('now', 'localtime'))", [search])
+        self.__db.execute(
+            "INSERT INTO Searches (text, site, language, datetime) VALUES (?, ?, ?, DATETIME('now', 'localtime'))", 
+            [search, site, lang]
+        )
 
     def save_page(self, page:WikiPage) -> None:
         """Save a wikipage to local database.
@@ -79,16 +86,22 @@ class Database():
             return None
 
         try:
-            self.__db.execute("INSERT INTO Pages (name, language, content, datetime) VALUES (?, ?, ?, DATETIME('now', 'localtime'))", [page.title, page.language, page.text])
+            self.__db.execute(
+                "INSERT INTO Pages (name, language, content, site, datetime) VALUES (?, ?, ?, ?, DATETIME('now', 'localtime'))", 
+                [page.title, page.language, page.text, page.site]
+            )
 
         except sqlite3.IntegrityError: # update page if it's already saved
-            self.__db.execute("UPDATE Pages SET content = ?, datetime = DATETIME('now', 'localtime') WHERE name = ?", [page.text, page.title])
+            self.__db.execute(
+                "UPDATE Pages SET content = ?, datetime = DATETIME('now', 'localtime') WHERE name = ? AND language = ? AND site = ?", 
+                [page.text, page.title, page.language, page.site]
+            )
 
 
 
 
-    def load_page(self, page_name:str, page_language:str) -> WikiPage | None:
-        """Load a wikipage from local database.
+    def load_page(self, page_name:str, page_language:str, page_site:str) -> WikiPage | None:
+        """Load a wiki page from local database.
 
         Returns None if:
         - the requested page doesn't exist in database 
@@ -102,22 +115,22 @@ class Database():
 
         sql_get_page = """
             SELECT 
-                P.name, P.content, P.language, P.datetime 
+                P.name, P.content, P.language, P.datetime, P.site
             FROM 
                 Pages P 
             WHERE 
-                P.name = ? AND P.language = ?
+                P.name = ? AND P.language = ? AND P.site = ?
         """
-        page = self.__db.execute(sql_get_page, [page_name, page_language]).fetchone()
+        page = self.__db.execute(sql_get_page, [page_name, page_language, page_site]).fetchone()
         if page == None:
             return None
 
-        title, text, language, date = page[0], page[1], page[2], datetime.fromisoformat(page[3])
+        title, text, language, date, site = page[0], page[1], page[2], datetime.fromisoformat(page[3]), page[4]
 
         if  self.page_needs_update(date):
             return None
         else:
-            return WikiPage(text, title, language)
+            return WikiPage(text, title, language, site)
     
 
 
@@ -138,7 +151,10 @@ class Database():
         elif limit <= 0:
             raise ValueError
         else:
-            pages = self.__db.execute("SELECT P.id, S.name FROM Pages P ORDER BY P.id DESC LIMIT ?", [limit]).fetchall()
+            pages = self.__db.execute(
+                "SELECT P.id, S.name FROM Pages P ORDER BY P.id DESC LIMIT ?", 
+                [limit]
+            ).fetchall()
 
         if pages == None:
             return None
@@ -162,7 +178,10 @@ class Database():
         elif limit <= 0:
             raise ValueError
         else:
-            searches = self.__db.execute("SELECT S.id, S.text, S.datetime FROM Searches S ORDER BY S.id DESC LIMIT ?", [limit]).fetchall()
+            searches = self.__db.execute(
+                "SELECT S.id, S.text, S.datetime FROM Searches S ORDER BY S.id DESC LIMIT ?", 
+                [limit]
+            ).fetchall()
 
         if searches == None:
             return None

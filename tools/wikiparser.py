@@ -94,11 +94,21 @@ class Section:
         
 
 class WikiPage:
-        def __init__(self, page_text:str, page_title:str, language:str) -> 'WikiPage':
+        valid_wiki_sites = [
+                "wikipedia",
+                "wiktionary"
+        ]
+
+        def __init__(self, page_text:str, page_title:str, language:str, site) -> 'WikiPage':
+                if site not in WikiPage.valid_wiki_sites:
+                        raise ValueError("Unsupported site")
+
                 self.__text = page_text
                 self.__title = page_title
                 self.__language = language
                 self.__root_section = self.__split_into_sections()
+                self.__site = site
+
 
         def __get_children(self, section_tuples:list, child_depth:int=1) -> Section:
                 """ Recursively arrange a dictionary of wiki titles and their contents into a parent-child tree.
@@ -221,3 +231,6 @@ class WikiPage:
         @property
         def language(self) -> str:
                 return self.__language
+        @property
+        def site(self) -> str:
+                return self.__site
