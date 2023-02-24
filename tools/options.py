@@ -1,5 +1,4 @@
-from functools import *
-from ui import cli_ui
+from functools import reduce
 
 #TODO add more options
 # - option for including quotations in dictionary output
