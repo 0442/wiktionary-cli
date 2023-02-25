@@ -1,11 +1,11 @@
 definitions = {
         "en" : [
-                "Adjective", "Adverb", "Article", "Conjuction", "Noun", "Numeral",
-                "Adposition", "Preposition", "Postposition",
+                "Adjective", "Adverb", "Article", "Conjuction", "Noun", "Numeral", 
+                "Adposition", "Preposition", "Postposition", 
                 "Participle", "Pronoun", "Verb", "Interjection", "Proper noun"
         ],
-        "fi" : ["Adjektiivi", "Adverbi", "Artikkeli", "Konjunktio", "Substantiivi", "Numeraali",
-                "Adpositio", "Prepositio", "Postpositio",
+        "fi" : ["Adjektiivi", "Adverbi", "Artikkeli", "Konjunktio", "Substantiivi", "Numeraali", 
+                "Adpositio", "Prepositio", "Postpositio", 
                 "Partisiippi", "Pronomini", "Verbi", "Interjektio", "Erisnimi"
         ],
 }
@@ -19,7 +19,7 @@ abbrev_table = {
                 "fi" : "Finnish",
         },
 
-        "fi" : {
+        "fi" : {        
                 "en" : "Englanti",
                 "fi" : "Suomi",
         },
