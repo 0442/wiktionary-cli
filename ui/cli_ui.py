@@ -109,8 +109,7 @@ def print_sections(page:WikiPage, path:str):
                 h = lines.pop(0) 
                 lines = parsing.__format_indents(lines)
                 print(h)
-                for l in lines:
-                        print(l)
+                print("\n".join(lines))
                 return 0
 
         matching_sects = page.find_page_sections(path)
@@ -122,7 +121,13 @@ def print_sections(page:WikiPage, path:str):
         # when path ends in '/', print matching sections' subsection structures
         if path.endswith("/"):
                 for s in matching_sects:
-                        print(s)
+                        lines = s.__str__().splitlines()
+                        h = lines.pop(0)
+                        print(h)
+                        if options.do_formatting:
+                                print("\n".join(parsing.__format_indents(lines)))
+                        else:
+                                print("\n".join(lines))
                 return 0
 
         for sect in matching_sects:
