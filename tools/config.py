@@ -1,13 +1,18 @@
+# database related
 DB_DIRECTORY_PATH = "$HOME/.local/state/wiktionary-cli/"
 DB_FILE_NAME = "data.db"
 
 DB_SAVE_SEARCHES = True
 
 DB_SAVE_PAGES = True
-DB_USE_SAVED_PAGES = True 
+DB_USE_SAVED_PAGES = True
 DB_PAGE_EXPIRATION_TIME = "10d"
 #DB_PAGE_EXPIRATION_TIME = "10y 20m 30w 40d 50h 60min 70s"
 
+# formatting
+INDENTATION_STR = "|   "
+
+# querying wiki
 WIKI_SEARCH_RESULTS_LIMIT = 10
 
 # not yet used:

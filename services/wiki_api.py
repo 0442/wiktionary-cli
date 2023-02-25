@@ -6,7 +6,7 @@ import tools.languages as languages
 import tools.config as config
 
 class WikiApi:
-    def __init__(self, language:str, site:str):
+    def __init__(self, language: str, site: str):
         """Create WikiApi object.
 
         Site needs to be either "wiktionary" or "wikipedia"
@@ -26,11 +26,11 @@ class WikiApi:
 
         self.__cookies = []
 
-    def __form_base_url(self, language:str, site:str):
+    def __form_base_url(self, language: str, site: str):
         url = f"https://{language}.{site}.org/w/api.php?format=json"
         return url
 
-    def search(self, search_word:str) -> list:
+    def search(self, search_word: str) -> list:
         """Does a search on wiki and returns the results in a list.
 
         Returns None if no results found.
@@ -49,7 +49,7 @@ class WikiApi:
             return search_results
 
 
-    def get_page(self, page_name:str) -> tuple:
+    def get_page(self, page_name: str) -> tuple:
         """Get a wiki page's title, id and text content by page name.
 
         If page is found, returns a tuple with title, pageid and wikitext.
@@ -72,4 +72,4 @@ class WikiApi:
             return (None, error_code, error_info)
 
 
-        
+
