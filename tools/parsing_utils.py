@@ -94,7 +94,7 @@ def find_bracketed_strings(text: str, starting_bracket: str, ending_bracket: str
 
 
 
-def _join_multiline_brackets(text: str) -> list:
+def _join_multiline_brackets(text: str) -> str:
         """Returns a copy of 'text' where brackets that span over multiple lines are joined onto the same line.
 
         Some brackets' contents are split over multiple lines. Info inside brackets is often separated with '|'.
@@ -124,7 +124,7 @@ def _join_multiline_brackets(text: str) -> list:
 
 
 
-def format_indents(text: str) -> list:
+def format_indents(text: str) -> str:
         """Returns a copy of the text with indentation and line numbers added.
         """
         lines = text.splitlines()
@@ -249,7 +249,7 @@ def format_all_brackets(text: str, starting_bracket:str, ending_bracket:str, for
         """ Formats all brackets in text using the given function.
 
         'format_func' is passed a matching bracketed substring (with the brackets) from 'text' as an argument.
-        'format_func' should output a new 'string' to be used as the arguments replacement.
+        'format_func' should output a new 'string' to be used as a replacement.
 
         Returns a modified copy of 'text'
         """
