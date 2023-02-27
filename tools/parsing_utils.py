@@ -3,7 +3,7 @@ from tools.wikiparser import Section
 
 # some utility functions
 
-def _find_brackets(line: str, starting_bracket: str, ending_bracket: str) -> list[dict]:
+def _find_brackets(text: str, starting_bracket: str, ending_bracket: str) -> list[dict]:
         """
         Find brackets and their positions in a string.
         Returns brackets in the same order as they are found in the string.
@@ -11,11 +11,11 @@ def _find_brackets(line: str, starting_bracket: str, ending_bracket: str) -> lis
         'start' is the starting position of the bracket and 'end' is the ending position.
         'start' and 'end' will be the same if bracket length is 1, e.g. if matching agains '{' and '}'.
         """
-        bracket_matches = list(re.finditer(f"({starting_bracket})" + "|" + f"({ending_bracket})", line))
+        bracket_matches = list(re.finditer(f"({starting_bracket})" + "|" + f"({ending_bracket})", text))
         brackets = []
         for b in bracket_matches:
                 brackets.append({
-                        "string" : line[b.start() : b.end()],
+                        "string" : text[b.start() : b.end()],
                         "start" : b.start(),
                         "end" : b.end()
                 })
@@ -66,7 +66,7 @@ def _get_matching_bracket_positions(brackets: list[dict], starting_bracket: str,
 
         return bracket_pairs
 
-def find_bracketed_strings(string: str, starting_bracket: str, ending_bracket: str) -> tuple:
+def find_bracketed_strings(text: str, starting_bracket: str, ending_bracket: str) -> tuple:
         """
         Wraps 'find_brackets' and 'get_matching_bracket_spans'
         for finding all bracketed strings and their spans,
@@ -74,7 +74,7 @@ def find_bracketed_strings(string: str, starting_bracket: str, ending_bracket: s
         """
         # if starting and ending brackets are the same, can't match them, dont try to find matching/nested ones
         if starting_bracket == ending_bracket:
-                brackets = _find_brackets(string, starting_bracket, ending_bracket)
+                brackets = _find_brackets(text, starting_bracket, ending_bracket)
                 br_spans = []
                 if brackets:
                         prev = brackets.pop(0)
@@ -83,30 +83,30 @@ def find_bracketed_strings(string: str, starting_bracket: str, ending_bracket: s
                                 br_spans.append((prev["start"],curr["end"]))
                                 prev = curr
         else:
-                brackets = _find_brackets(string, starting_bracket, ending_bracket)
+                brackets = _find_brackets(text, starting_bracket, ending_bracket)
                 br_spans = _get_matching_bracket_positions(brackets, starting_bracket, ending_bracket)
 
         bracketed_strs = []
         for span in br_spans:
-                bracketed_strs.append( (string[span[0] : span[1]], span) )
+                bracketed_strs.append( (text[span[0] : span[1]], span) )
 
         return bracketed_strs
 
 
 
-def _join_multiline_brackets(lines: list) -> list:
-        """Returns a copy of lines where brackets that span over multiple lines are joined onto the same line.
+def _join_multiline_brackets(text: str) -> list:
+        """Returns a copy of 'text' where brackets that span over multiple lines are joined onto the same line.
 
         Some brackets' contents are split over multiple lines. Info inside brackets is often separated with '|'.
         Long bracketed strings are linebroken at these separators so that the following lines belonging inside these brackets start with '|'.
         This function joins these lines together.
         """
-        lines = lines.copy()
+        lines = text.splitlines()
 
         if len(lines) < 1:
                 return lines
 
-        formatted_lines = []
+        joined_lines = []
         prev_line = lines.pop(0)
         while len(lines) > 0:
                 curr_line = lines.pop(0)
@@ -115,19 +115,19 @@ def _join_multiline_brackets(lines: list) -> list:
                         continue
 
                 else:
-                        formatted_lines.append(prev_line)
+                        joined_lines.append(prev_line)
                         prev_line = curr_line
 
-        formatted_lines.append(prev_line)
+        joined_lines.append(prev_line)
 
-        return formatted_lines
+        return '\n'.join(joined_lines)
 
 
 
-def format_indents(lines: list) -> list:
-        """Returns a copy of the lines of a wiki page with indentation and line numbers added.
+def format_indents(text: str) -> list:
+        """Returns a copy of the text with indentation and line numbers added.
         """
-        lines = lines.copy()
+        lines = text.splitlines()
 
         formatted_lines = []
         def indent_sub_sections(lines: list, formatted_lines: list, self_d: int = 1):
@@ -138,7 +138,7 @@ def format_indents(lines: list) -> list:
 
                 linenum = 1
                 while len(lines) > 0:
-                        line = lines.pop(0)
+                        line = lines.pop(0).strip()
                         indent_count = self_d# + 1
 
                         # '##' -lines (sub definitions), recurse
@@ -184,7 +184,7 @@ def format_indents(lines: list) -> list:
 
                 return formatted_lines
 
-        return indent_sub_sections(lines, formatted_lines)
+        return '\n'.join(indent_sub_sections(lines, formatted_lines))
 
 def format_curly_bracketed_str(bracketed_str: str) -> str:
         sections = bracketed_str.strip("}{").split("|")
@@ -245,155 +245,58 @@ def format_curly_bracketed_str(bracketed_str: str) -> str:
         return formatted_str
 
 
+def format_all_brackets(text: str, starting_bracket:str, ending_bracket:str, format_func: callable) -> str:
+        """ Formats all brackets in text using the given function.
+
+        'format_func' is passed a matching bracketed substring (with the brackets) from 'text' as an argument.
+        'format_func' should output a new 'string' to be used as the arguments replacement.
+
+        Returns a modified copy of 'text'
+        """
+        mod_text = text[:]
+        brackets = find_bracketed_strings(text, starting_bracket, ending_bracket)
+        while len(brackets) > 0:
+                target_bracket = brackets[0]
+
+                bracket_span = target_bracket[1]
+                bracket_start = bracket_span[0]
+                bracket_end = bracket_span[1]
+                bracketed_str = target_bracket[0]
+
+                replacement = format_func(bracketed_str)
+                mod_text = mod_text[ : bracket_start] + replacement + mod_text[bracket_end : ]
+
+                brackets = find_bracketed_strings(mod_text, starting_bracket, ending_bracket)
+
+        return mod_text
+
+
 def format_section_content(section: Section, lang: str) -> str:
         """ Returns the text content of a section formatted into a nicer format.
         """
-        section_content_rows = section.content.splitlines()
+        sect_text = section.content
         # add section header
-        section_content_rows .insert(0, "===" + "\033[1;34m" + section.title + "\033[22;39m" + "===")
+        sect_text = ("===" + "\033[1;34m" + section.title + "\033[22;39m" + "===" + '\n') + sect_text
 
-        section_content_rows = _join_multiline_brackets(section_content_rows)
+        #sect_text = _join_multiline_brackets(sect_text)
 
-        formatted_lines = []
-        for line in section_content_rows:
-                newline = line
+        sect_text = format_all_brackets(sect_text, "'''", "'''",
+                lambda s: "\033[1m" + s.strip("'") + "\033[22m" )
+        sect_text = format_all_brackets(sect_text, "\<ref", "\<\/ref\>",
+                lambda s: "" )
+        sect_text = format_all_brackets(sect_text, "\<ref", "\/\>",
+                lambda s: "" )
+        sect_text = format_all_brackets(sect_text, "\<code", "\<\/code\>",
+                lambda s: "" )
+        sect_text = format_all_brackets(sect_text, "\<code", "\/\>",
+                lambda s: "" )
+        sect_text = format_all_brackets(sect_text, "''", "''",
+                lambda s: "\033[3m" + s.strip("'") + "\033[23m" )
+        sect_text =  format_all_brackets(sect_text, "\[\[", "\]\]",
+                lambda s: "\033[35m" + s.strip("[]") + "\033[39m" )
+        sect_text = format_all_brackets(sect_text, "{{", "}}",
+                format_curly_bracketed_str)
 
+        sect_text = format_indents(sect_text)
 
-                # FIXME code repetition
-                brackets = find_bracketed_strings(newline, "'''", "'''")
-                while len(brackets) > 0:
-                        target_bracket = brackets[0]
-
-                        bracket_span = target_bracket[1]
-                        bracket_start = bracket_span[0]
-                        bracket_end = bracket_span[1]
-                        bracketed_str = target_bracket[0]
-
-                        replacement = "\033[1m" + bracketed_str.strip("'") + "\033[22m"
-                        newline = newline[ : bracket_start] + replacement + newline[bracket_end : ]
-
-                        brackets = find_bracketed_strings(newline, "'''", "'''")
-
-
-
-                brackets = find_bracketed_strings(newline, "\<ref", "\<\/ref\>")
-                while len(brackets) > 0:
-                        target_bracket = brackets[0]
-
-                        bracket_span = target_bracket[1]
-                        bracket_start = bracket_span[0]
-                        bracket_end = bracket_span[1]
-                        bracketed_str = target_bracket[0]
-
-                        replacement = ""
-                        newline = newline[ : bracket_start] + replacement + newline[bracket_end : ]
-
-                        brackets = find_bracketed_strings(newline, "\<ref", "\<\/ref\>")
-
-
-
-                brackets = find_bracketed_strings(newline, "\<code", "\<\/code\>")
-                while len(brackets) > 0:
-                        target_bracket = brackets[0]
-
-                        bracket_span = target_bracket[1]
-                        bracket_start = bracket_span[0]
-                        bracket_end = bracket_span[1]
-                        bracketed_str = target_bracket[0]
-
-                        replacement = ""
-                        newline = newline[ : bracket_start] + replacement + newline[bracket_end : ]
-
-                        brackets = find_bracketed_strings(newline, "\<code", "\<\/code\>")
-
-
-
-                brackets = find_bracketed_strings(newline, "''", "''")
-                while len(brackets) > 0:
-                        target_bracket = brackets[0]
-
-                        bracket_span = target_bracket[1]
-                        bracket_start = bracket_span[0]
-                        bracket_end = bracket_span[1]
-                        bracketed_str = target_bracket[0]
-
-                        replacement = "\033[3m" + bracketed_str.strip("'") + "\033[23m"
-                        newline = newline[ : bracket_start] + replacement + newline[bracket_end : ]
-
-                        brackets = find_bracketed_strings(newline, "''", "''")
-
-
-
-                brackets = find_bracketed_strings(newline, "\[\[", "\]\]")
-                while len(brackets) > 0:
-                        target_bracket = brackets[0]
-
-                        bracket_span = target_bracket[1]
-                        bracket_start = bracket_span[0]
-                        bracket_end = bracket_span[1]
-                        bracketed_str = target_bracket[0]
-
-                        replacement = "\033[35m" + bracketed_str.strip("[]") + "\033[39m"
-                        newline = newline[ : bracket_start] + replacement + newline[bracket_end : ]
-
-                        brackets = find_bracketed_strings(newline, "\[\[", "\]\]")
-
-
-
-                brackets = find_bracketed_strings(newline, "{{", "}}")
-                while len(brackets) > 0:
-                        target_bracket = brackets[0]
-
-                        bracket_span = target_bracket[1]
-                        bracket_start = bracket_span[0]
-                        bracket_end = bracket_span[1]
-                        bracketed_str = target_bracket[0]
-
-                        replacement = format_curly_bracketed_str(bracketed_str)
-                        newline = newline[ : bracket_start] + replacement + newline[bracket_end : ]
-
-                        brackets = find_bracketed_strings(newline, "{{", "}}")
-
-
-
-                formatted_lines.append(newline)
-
-        formatted_lines = format_indents(formatted_lines)
-
-        return '\n'.join(formatted_lines)
-
-
-
-def parse_translations_section(tr_section:str, from_lang, to_lang:str) -> str:
-        return tr_section
-        tr_str = ""
-        starts = list(re.finditer(".*\(trans-top.*", tr_section))
-        ends = list(re.finditer(".*\(trans-bottom\)", tr_section))
-        while len(starts) > 0:
-                subsect_start = starts.pop(0).start()
-                subsect_end = ends.pop(0).end()
-                subsect = tr_section[subsect_start:subsect_end]
-                subsect_lines = subsect.splitlines()
-                subsect_lines[0] = subsect_lines[0].replace("(trans-top, ", "").replace(")", "")
-                subsect_lines.pop(len(subsect_lines)-1)
-                relevant_lines = []
-                for line in subsect_lines:
-                        if line.startswith(f"* {lang_abbrev_table[from_lang][to_lang]}"):
-                                translated_words = line.removeprefix(f"* {lang_abbrev_table[from_lang][to_lang]}: ")
-                                split = re.split("\(" + "([^)(]+)" + "\)",translated_words)
-                                i = 1
-                                for l in split:
-                                        l = l.strip()
-                                        if not l:
-                                                continue
-                                        relevant_lines.append(("  " + str(i) + ". " + l))
-                                        i+=1
-
-                        elif line.startswith("*"):
-                                continue
-                        else:
-                                relevant_lines.append(line)
-
-                tr_str += "\n".join(relevant_lines) + "\n\n"
-
-        return tr_str
+        return sect_text
