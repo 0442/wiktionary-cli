@@ -27,7 +27,7 @@ def _get_matching_bracket_positions(brackets: list[dict], starting_bracket: str,
 
         recursive function for finding the starting and ending positions of matching brackets (including nested ones)
         """
-        # brackets may included characters that needed to be escaped for regex, so remove the backslashes
+        # remove backslashes, as bracket strings may include escaped characters for regex matching
         starting_bracket = starting_bracket.replace("\\", "")
         ending_bracket = ending_bracket.replace("\\", "")
 
@@ -38,39 +38,39 @@ def _get_matching_bracket_positions(brackets: list[dict], starting_bracket: str,
         prev_brack = brackets.pop(0)
 
         while len(brackets) > 0:
-                curr_brack = brackets.pop(0)
+                cur_brack = brackets.pop(0)
 
                 # if opening bracket, continue to find it's closing one
-                if curr_brack["string"] == starting_bracket and prev_brack["string"] == ending_bracket:
-                        prev_brack = curr_brack
+                if cur_brack["string"] == starting_bracket and prev_brack["string"] == ending_bracket:
+                        prev_brack = cur_brack
                         continue
 
                 # if opening nested bracket, recurse
-                if curr_brack["string"] == starting_bracket and prev_brack["string"] == starting_bracket:
-                        brackets.insert(0, curr_brack)
+                if cur_brack["string"] == starting_bracket and prev_brack["string"] == starting_bracket:
+                        brackets.insert(0, cur_brack)
                         nest_bracks = _get_matching_bracket_positions(brackets, starting_bracket, ending_bracket)
-
-                        [bracket_pairs.append(b) for b in nest_bracks]
-                        prev_brack = curr_brack
+                        for b in nest_bracks: bracket_pairs.append(b)
+                        prev_brack = cur_brack
                         continue
 
                 # if closing brackets, add to matching pairs
-                if curr_brack["string"] == ending_bracket and prev_brack["string"] == starting_bracket:
-                        bracket_pairs.append( (prev_brack["start"], curr_brack["end"]) )
-                        prev_brack = curr_brack
+                if cur_brack["string"] == ending_bracket and prev_brack["string"] == starting_bracket:
+                        bracket_pairs.append( (prev_brack["start"], cur_brack["end"]) )
+                        prev_brack = cur_brack
                         continue
 
                 # if two closing brackets in a row, go break and go up a level in recursion
-                if curr_brack["string"] == ending_bracket and prev_brack["string"] == ending_bracket:
+                if cur_brack["string"] == ending_bracket and prev_brack["string"] == ending_bracket:
                         break
 
         return bracket_pairs
 
 def find_bracketed_strings(text: str, starting_bracket: str, ending_bracket: str) -> tuple:
-        """
-        Wraps 'find_brackets' and 'get_matching_bracket_spans'
-        for finding all bracketed strings and their spans,
-        including nested ones, in a string.
+        """Finds the spans of bracketed substrings, including nested ones, in 'text'.
+
+        Returns a list of spans.
+
+        wrapper function for 'find_brackets' and 'get_matching_bracket_spans'
         """
         # if starting and ending brackets are the same, can't match them, dont try to find matching/nested ones
         if starting_bracket == ending_bracket:
@@ -79,9 +79,9 @@ def find_bracketed_strings(text: str, starting_bracket: str, ending_bracket: str
                 if brackets:
                         prev = brackets.pop(0)
                         while len(brackets) > 0:
-                                curr = brackets.pop(0)
-                                br_spans.append((prev["start"],curr["end"]))
-                                prev = curr
+                                cur = brackets.pop(0)
+                                br_spans.append((prev["start"],cur["end"]))
+                                prev = cur
         else:
                 brackets = _find_brackets(text, starting_bracket, ending_bracket)
                 br_spans = _get_matching_bracket_positions(brackets, starting_bracket, ending_bracket)
@@ -109,14 +109,14 @@ def _join_multiline_brackets(text: str) -> str:
         joined_lines = []
         prev_line = lines.pop(0)
         while len(lines) > 0:
-                curr_line = lines.pop(0)
-                if re.match("^[ \| }} \]\] ]", curr_line):
-                        prev_line += curr_line
+                cur_line = lines.pop(0)
+                if re.match("^[ \| }} \]\] ]", cur_line):
+                        prev_line += cur_line
                         continue
 
                 else:
                         joined_lines.append(prev_line)
-                        prev_line = curr_line
+                        prev_line = cur_line
 
         joined_lines.append(prev_line)
 
@@ -278,7 +278,7 @@ def format_section_content(section: Section, lang: str) -> str:
         # add section header
         sect_text = ("===" + "\033[1;34m" + section.title + "\033[22;39m" + "===" + '\n') + sect_text
 
-        #sect_text = _join_multiline_brackets(sect_text)
+        sect_text = _join_multiline_brackets(sect_text)
 
         sect_text = format_all_brackets(sect_text, "'''", "'''",
                 lambda s: "\033[1m" + s.strip("'") + "\033[22m" )
