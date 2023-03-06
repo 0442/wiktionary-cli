@@ -10,6 +10,11 @@ definitions = {
         ],
 }
 
+translations = {
+        "en" : "Translations",
+        "fi" : "Käännökset",
+}
+
 supported = ["en", "fi"]
 
 # lookup tables for how languages

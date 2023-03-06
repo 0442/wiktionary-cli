@@ -24,7 +24,9 @@ class Section:
         @children.setter
         def children(self, children):
                 self.__children =  children
-
+        @title.setter
+        def title(self, title):
+                self.__title = title
 
         def add_child(self, child: 'Section') -> None:
                 self.__children.append(child)
@@ -191,12 +193,18 @@ class WikiPage:
 
                 matching_sections = []
 
-                if path.lower() == "definitions" or path.lower() == "defs":
+                if path.lower() == "@definitions" or path.lower() == "@defs":
                         for wc in languages.definitions[self.__language]:
                                 target_sect = root_section.find(languages.abbrev_table[self.__language][self.__language] + "/" + wc)
                                 if target_sect:
                                         matching_sections.append(target_sect)
 
+                elif path.lower() == "@translations" or path.lower() == "@trs":
+                        for wc in languages.definitions[self.__language]:
+                                target_sect = root_section.find(languages.abbrev_table[self.__language][self.__language] + "/" + wc + "/" + languages.translations[self.__language])
+                                if target_sect:
+                                        target_sect.title += " " + "(" + wc + ")"
+                                        matching_sections.append(target_sect)
 
                 else:
                         target_sect = root_section.find(path)
