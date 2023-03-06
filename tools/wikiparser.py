@@ -145,16 +145,12 @@ class WikiPage:
                 title_matches = list(re.finditer("^=+" + "[^=]+" + "=+$", self.__text, re.MULTILINE))
 
                 # get the starting and ending positions for each title
-                section_spans = [(0,0)]         # Pages from wiktionary api don't contain the page's main title. Pages don't often start with a subtitle, but rather with some info right under the main title.
-                                                # To not have it discarded, add title at 0. Main title needs to be added manually, otherwise this would lead to an empty section.
+                section_spans = [(0,0)]
+
                 for m in title_matches:
                         section_spans.append(m.span())
 
-                # Note:
-                # Number of '=' signs in title indicates the 'depth' of the title,
-                # ie. how many parent titles it has (including itself),
-                # eg. "==Translations==" has depth 2, meaning its a subtitle of the outer most title, the main title, which has depth 1.
-                titles = ["=" + self.__title + "="]  # name for the main title
+                titles = ["=" + self.__title + "="]  # add title for page root
                 for s in section_spans:
                         title = self.__text[s[0] : s[1]]
                         if title != '':
