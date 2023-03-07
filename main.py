@@ -1,5 +1,4 @@
 #!/bin/env python3
-
 import sys
 
 from ui import cli_ui
@@ -39,7 +38,7 @@ def main() -> int:
                 return 1
 
         if positional_args[0] in options.DICTIONARY_MODE_NAMES:
-                page = services.wiki_page(positional_args[1:], "wiktionary")
+                page = services.fetch_wiki_page(positional_args[1:], "wiktionary")
                 path = positional_args[3] if len(positional_args) >= 4 else None
                 return cli_ui.print_sections(page, path) if page else 1
 
@@ -48,7 +47,7 @@ def main() -> int:
                 ...
 
         elif positional_args[0] in options.ARTICLE_MODE_NAMES:
-                page = services.wiki_page(positional_args[1:], "wikipedia")
+                page = services.fetch_wiki_page(positional_args[1:], "wikipedia")
                 path = positional_args[3] if len(positional_args) >= 4 else None
                 return cli_ui.print_sections(page, path) if page else 1
 

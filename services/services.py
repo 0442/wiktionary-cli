@@ -33,7 +33,7 @@ def __search_wiki(search: str, lang: str, site: str) -> int:
         [print(r) for r in results]
         return 0
 
-def wiki_page(args: list[str], site: str) -> WikiPage | None:
+def fetch_wiki_page(args: list[str], site: str) -> WikiPage | None:
         if len(args) < 2:
                 cli_ui.print_help_msg()
                 exit(1)
