@@ -7,32 +7,47 @@ from tools import options
 # Functions for printing some output
 def word_not_found(word: str, search_lang: str) -> None:
         print(f"Cannot find a wiktionary entry for '{word}' in {languages.abbrev_table['en'][search_lang]}.")
-        return
+        return None
 
 def print_supported_languages() -> None:
-        langs = [f"  {lang}\t{languages.abbrev_table['en'][lang]}" for lang in languages.supported]
-        print()
+        langs = [f"  {lang}  {languages.abbrev_table['en'][lang]}" for lang in languages.supported]
         print("Supported languages: ")
         print("\n".join(langs))
-        print()
-        return
+        return None
 
-def print_help_msg() -> None:
-        print("Wiktionary-cli - cli dictionary based on wiktionary entries.")
-        print("")
-        print("Usage: ")
-        print("  sanakirja dictionary|dict|d <lang> <title> [<section-path>|definitions|defs]")
-        print("  sanakirja translate|tr|t <from-lang> <to-lang> <word>")
-        print("  sanakirja article|wikipedia|wiki|w <lang> <title> [<section-path>]")
-        print("")
-        print("Options: ")
+def print_keywords() -> None:
+        keywords = WikiPage.sect_matching_keywords
+
+        print("Keywords:")
+        for k in keywords:
+                print("  ", end="")
+                print(", ".join(k))
+
+        return None
+
+def print_options() -> None:
+        print(f"Options:")
         for opt_names, opt_desc in options.VALID_OPTIONS.items():
                 options_str = " ".join(opt_names)
                 left_offset = (21 - len(options_str)) * " "
                 print("  " + options_str + left_offset + opt_desc)
 
+def print_help_msg() -> None:
+        dict_commands = "|".join(options.DICTIONARY_MODE_NAMES)
+        article_commands = "|".join(options.ARTICLE_MODE_NAMES)
+        translate_commands = "|".join(options.TRANSLATION_MODE_NAMES)
+
+        print("Usage:")
+        print(f"  wiktionary {dict_commands} <language> <title> [<section-path>|<keyword>]")
+        print(f"  wiktionary {article_commands} <from-language> <to-language> <word>")
+        print(f"  wiktionary {translate_commands} <language> <title> [<section-path>]")
+        print()
+        print_options()
+        print()
         print_supported_languages()
-        return
+        print()
+        print_keywords()
+        return None
 
 def print_saved_searches() -> int:
         """Print searches that are saved into the database
