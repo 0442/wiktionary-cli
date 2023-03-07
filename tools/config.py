@@ -15,7 +15,8 @@ INDENTATION_STR = "|   "
 # querying wiki
 WIKI_SEARCH_RESULTS_LIMIT = 10
 
-# not yet used:
+# not yet implemented:
 DB_SAVE_FAILED_SEARCHES = False
 DB_PAGE_ARCHIVE_LENGTH = 100
 DB_SEARCH_ARCHIVE_LENGTH = 100
+MAX_DB_SIZE = "1GB"
