@@ -11,8 +11,8 @@ TRANSLATION_MODE_NAMES = ["t", "translate"]
 VALID_OPTIONS = {
         ("-h", "--help") : "Print this message and exit.",
         ("-r", "--raw") : "Don't format output.",
-        ("-s", "--search") : "Search instead of fetching a page.",
-        ("-f", "--force-web") : "Prioritize web over local copy.",
+        ("-s", "--search") : "Do a search instead of fetching a page.",
+        ("-f", "--force-web") : "Fetch page from wiki even if a local copy exists.",
         ("-ls", "--list-searches") : "Print saved searches and exit.",
         ("-lp", "--list-pages") : "Print saved pages and exit.",
         ("-v", "--verbose") : "Verbose output."
