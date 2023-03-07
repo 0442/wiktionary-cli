@@ -10,9 +10,9 @@ def word_not_found(word: str, search_lang: str) -> None:
         return None
 
 def print_supported_languages() -> None:
-        langs = [f"  {lang}  {languages.abbrev_table['en'][lang]}" for lang in languages.supported]
         print("Supported languages: ")
-        print("\n".join(langs))
+        for l in languages.supported:
+                print(f"  {l}")
         return None
 
 def print_keywords() -> None:
@@ -21,7 +21,7 @@ def print_keywords() -> None:
         print("Keywords:")
         for k in keywords:
                 print("  ", end="")
-                print(", ".join(k))
+                print(" ".join(k))
 
         return None
 
