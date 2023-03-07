@@ -16,7 +16,7 @@ class WikiApi:
         self.__valid_wiki_sites = ["wiktionary", "wikipedia"]
 
         if site not in self.__valid_wiki_sites:
-            raise ValueError(f'unknown site "{site}"')
+            raise ValueError(f'unsupported site "{site}"')
         self.__site = site
 
         if language not in languages.supported:
