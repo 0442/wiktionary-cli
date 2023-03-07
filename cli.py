@@ -38,20 +38,16 @@ def main() -> int:
                 cli_ui.print_help_msg()
                 return 1
 
-        dict_mode_names = ["d", "dict", "dictionary"]
-        wiki_mode_names = ["w", "wiki", "wikipedia"]
-        translate_mode_names = ["t", "tr", "translate"]
-
-        if positional_args[0] in dict_mode_names:
+        if positional_args[0] in options.DICTIONARY_MODE_NAMES:
                 page = services.wiki_page(positional_args[1:], "wiktionary")
                 path = positional_args[3] if len(positional_args) >= 4 else None
                 return cli_ui.print_sections(page, path) if page else 1
 
-        elif positional_args[0] in translate_mode_names:
+        elif positional_args[0] in options.TRANSLATION_MODE_NAMES:
                 print("not yet supported")
                 ...
 
-        elif positional_args[0] in wiki_mode_names:
+        elif positional_args[0] in options.ARTICLE_MODE_NAMES:
                 page = services.wiki_page(positional_args[1:], "wikipedia")
                 path = positional_args[3] if len(positional_args) >= 4 else None
                 return cli_ui.print_sections(page, path) if page else 1
