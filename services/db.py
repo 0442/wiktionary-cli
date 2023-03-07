@@ -26,11 +26,11 @@ class Database():
 
 
     def __create_tables(self) -> None:
-        # TODO save page ids as well + case insensitive search from local database.
+        # TODO save page ids as well + case insensitive search from database.
         # (
         #   Getting a page from wikipedia seems to be *case insensitive*.
-        #   If getting a page from the local db is *case sensitive*,
-        #   the same page cannot be accessed from local db and from web
+        #   If getting a page from the db is *case sensitive*,
+        #   the same page cannot be accessed from db and from web
         #   with the same search word.
         # ) (getting pages from wiktionary though is case sensitive)
 
@@ -73,7 +73,7 @@ class Database():
 
 
     def save_search(self, search: str, site: str, lang: str) -> None:
-        """Save a search to local database.
+        """Save a search to database.
 
         If DB_SAVE_SEARCHES is set to False in config, search is not saved.
         """
@@ -86,7 +86,7 @@ class Database():
         )
 
     def save_page(self, page: WikiPage) -> None:
-        """Save a wikipage to local database.
+        """Save a wikipage to database.
 
         If DB_SAVE_PAGES is set to False in config, page is not saved.
         """
@@ -109,7 +109,9 @@ class Database():
 
 
     def load_page(self, page_name: str, page_language: str, page_site: str) -> WikiPage | None:
-        """Load a wiki page from local database.
+        """Load a wiki page from database.
+
+        Gets a saved page from database and constructs WikiPage object of that page.
 
         Returns None if:
         - the requested page doesn't exist in database
@@ -144,7 +146,7 @@ class Database():
 
 
     def get_saved_pages(self, limit: int=None) -> list[tuple]:
-        """Get saved pages from local database.
+        """Get saved pages from database.
 
         limit: maximum number of pages to fetch. If no limit given, returns all pages.
 
@@ -170,7 +172,7 @@ class Database():
         return pages
 
     def get_saved_searches(self, limit: int=None) -> list[tuple]:
-        """Get saved searches from local database.
+        """Get saved searches from database.
 
         limit: maximum number of searches to fetch. If no limit given, returns all searches.
 
