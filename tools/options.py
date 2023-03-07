@@ -2,19 +2,23 @@ from functools import reduce
 
 #TODO add more OPTIONS
 # - option for including quotations in dictionary output
-# - option for resolving redirects when getting page from wiki
+# - option for resolving redirects
+
+DICTIONARY_MODE_NAMES = ["d", "dictionary"]
+ARTICLE_MODE_NAMES = ["a", "article", "wikipedia"]
+TRANSLATION_MODE_NAMES = ["t", "translate"]
 
 VALID_OPTIONS = {
-        ("-h", "--help") : "Show this screen and exit.",
+        ("-h", "--help") : "Print this message and exit.",
         ("-r", "--raw") : "Don't format output.",
-        ("-s", "--search") : "Search wiki instead of fetching a page.",
-        ("-f", "--force-web") : "Get wiki page from web without attempting to use a local copy first.",
+        ("-s", "--search") : "Search instead of fetching a page.",
+        ("-f", "--force-web") : "Prioritize web over local copy.",
         ("-ls", "--list-searches") : "Print saved searches and exit.",
         ("-lp", "--list-pages") : "Print saved pages and exit.",
         ("-v", "--verbose") : "Verbose output."
 }
 
-VALID_OPTIONS_LIST = reduce(lambda part,all: all+part, VALID_OPTIONS.keys())
+VALID_OPTIONS_LIST = reduce(lambda o,l: o+l, VALID_OPTIONS.keys())
 
 def init(args: list[str]) -> int:
         global OPTIONS
