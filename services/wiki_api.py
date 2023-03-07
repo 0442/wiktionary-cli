@@ -14,12 +14,13 @@ class WikiApi:
         """
 
         self.__valid_wiki_sites = ["wiktionary", "wikipedia"]
+
         if site not in self.__valid_wiki_sites:
-            raise ValueError
+            raise ValueError(f'unknown site "{site}"')
         self.__site = site
 
         if language not in languages.supported:
-            raise ValueError
+            raise ValueError(f'unsupported language "{language}"')
         self.__language = language
 
         self.__base_url = self.__form_base_url(self.__language, self.__site)
