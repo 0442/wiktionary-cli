@@ -40,7 +40,6 @@ def print_help_msg() -> None:
         print("Usage:")
         print(f"  wiktionary {dict_commands} <language> <title> [<section-path>|<keyword>]")
         print(f"  wiktionary {article_commands} <from-language> <to-language> <word>")
-        print(f"  wiktionary {translate_commands} <language> <title> [<section-path>]")
         print()
         print_options()
         print()

@@ -6,7 +6,6 @@ from functools import reduce
 
 DICTIONARY_MODE_NAMES = ["d", "dictionary"]
 ARTICLE_MODE_NAMES = ["a", "article", "wikipedia"]
-TRANSLATION_MODE_NAMES = ["t", "translate"]
 
 VALID_OPTIONS = {
         ("-h", "--help") : "Print this message and exit.",
