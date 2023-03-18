@@ -35,7 +35,6 @@ def print_options() -> None:
 def print_help_msg() -> None:
         dict_commands = "|".join(options.DICTIONARY_MODE_NAMES)
         article_commands = "|".join(options.ARTICLE_MODE_NAMES)
-        translate_commands = "|".join(options.TRANSLATION_MODE_NAMES)
 
         print("Usage:")
         print(f"  wiktionary {dict_commands} <language> <title> [<section-path>|<keyword>]")
