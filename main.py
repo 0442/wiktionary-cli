@@ -42,10 +42,6 @@ def main() -> int:
                 path = positional_args[3] if len(positional_args) >= 4 else None
                 return cli_ui.print_sections(page, path) if page else 1
 
-        elif positional_args[0] in options.TRANSLATION_MODE_NAMES:
-                print("not yet supported")
-                ...
-
         elif positional_args[0] in options.ARTICLE_MODE_NAMES:
                 page = services.fetch_wiki_page(positional_args[1:], "wikipedia")
                 path = positional_args[3] if len(positional_args) >= 4 else None
