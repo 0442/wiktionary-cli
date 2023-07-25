@@ -1,69 +1,131 @@
 import re
 from tools.wikiparser import Section
+from time import sleep
+from time import time
+from tools import options
+from collections import namedtuple
+
+Bracket = namedtuple('Bracket', ['pos', 'str'])
+"""Position is the position of the starting/ending_bracket's first character's position in 'text'.
+"""
 
 # some utility functions
 
-def _find_brackets(text: str, starting_bracket: str, ending_bracket: str) -> list[dict]:
+def _find_brackets(text: str, starting_bracket: str, ending_bracket: str) -> list[Bracket]:
         """
         Find brackets and their positions in a string.
         Returns brackets in the same order as they are found in the string.
-        Returns a dictionary where 'string' is the matching bracket,
-        'start' is the starting position of the bracket and 'end' is the ending position.
-        'start' and 'end' will be the same if bracket length is 1, e.g. if matching agains '{' and '}'.
+        Returns a list of Brackets.
         """
-        bracket_matches = list(re.finditer(f"({starting_bracket})" + "|" + f"({ending_bracket})", text))
-        brackets = []
-        for b in bracket_matches:
-                brackets.append({
-                        "string" : text[b.start() : b.end()],
-                        "start" : b.start(),
-                        "end" : b.end()
-                })
 
+        s_bracket_len = len(starting_bracket)
+        e_bracket_len = len(ending_bracket)
+
+        brackets = []
+        for char_i in range(len(text)):
+                if text[char_i : char_i + s_bracket_len] == starting_bracket:
+                        brackets.append(Bracket(char_i, starting_bracket))
+                elif text[char_i : char_i + e_bracket_len] == ending_bracket:
+                        brackets.append(Bracket(char_i, ending_bracket))
         return brackets
 
-def _get_matching_bracket_positions(brackets: list[dict], starting_bracket: str, ending_bracket: str) -> list[tuple]:
-        """ Returns a list of starting and ending positions of matching brackets from the output of _find_brackets().
-
-        recursive function for finding the starting and ending positions of matching brackets (including nested ones)
+def _is_overlapping(b1:Bracket, b2:Bracket) -> bool:
+        """check if brackets, of more than 1 character, overlap.
+        b1 and b2 are Brackets whose overlapping is to be tested.
         """
-        # remove backslashes, as bracket strings may include escaped characters for regex matching
-        starting_bracket = starting_bracket.replace("\\", "")
-        ending_bracket = ending_bracket.replace("\\", "")
+        result = False
 
-        bracket_pairs = []
-        if len(brackets) < 1:
-                return bracket_pairs
+        b1_left_pos = b1.pos # position of left most char
+        b1_right_pos = b1.pos + len(b1.str) - 1 # position of right most char
 
-        prev_brack = brackets.pop(0)
+        b2_left_pos = b2.pos # --||–-
+        b2_right_pos = b2.pos + len(b2.str) - 1 # --||--
 
-        while len(brackets) > 0:
-                cur_brack = brackets.pop(0)
+        if b2_left_pos <= b1_right_pos <= b2_right_pos:
+                result = True
 
-                # if opening bracket, continue to find it's closing one
-                if cur_brack["string"] == starting_bracket and prev_brack["string"] == ending_bracket:
-                        prev_brack = cur_brack
+        if b1_left_pos <= b2_right_pos <= b1_right_pos:
+                result = True
+
+        return result
+
+
+def _get_matching_brackets(brackets: list[Bracket], opening_bracket_str: str, closing_bracket_str: str, _used:dict=None, _pairs:list=None, _pointer:int=0, _has_no_pair:list=None, _iter_counter:int=0) -> list[Bracket]:
+        """Returns a list of Brackets, where every opening bracket is followed by it's closing bracket.
+
+        finds the pairs from the output of _find_brackets().
+
+        Recursive function for matching closing and ending brackets from a list of brackets (including nested ones)
+        """
+        """Re-implemented _get_matching_bracket_positions.
+        Only continues checking the brackets forward if there is a starting bracket for every closing bracket found. Otherwise stops going forwards."""
+        start_time = time()
+
+        # init stuff at first loop, at recursion depth 0.
+        if _pairs == None:
+                _pairs = []
+        if _used == None:
+                _used = {b:False for b in brackets}
+        # _has_no_pair used for optimizing strings which include opening brackets that are not closed
+        if _has_no_pair == None:
+                _has_no_pair = {b:False for b in brackets}
+
+        ending_pair = None
+        starting_pair = brackets[_pointer] if _pointer < len(brackets) else None
+        for cur_pointer in range(_pointer, len(brackets)):
+                bracket = brackets[cur_pointer]
+
+                # printing, for debugging
+                if options.VERBOSE == True and options.PRINT_HELP:
+                        print('\x1b[1F',end="")
+                        for b in brackets:
+                                if b in _pairs:
+                                        print(f"\x1b[38;5;154;1m",end="")
+                                elif _used[b] == True:
+                                        print(f"\x1b[38;5;63m", end="")
+                                elif _has_no_pair[b] == True:
+                                        print(f"\x1b[38;5;124;4m", end="")
+                                else:
+                                        #print(f"\x1b[38;5;255m", end="")
+                                        ...
+                                print(b[1]+"\x1b[0m",end="")
+                        print()
+
+                        print("\x1b[0G"+80*" ", end="")
+                        print(f"\x1b[{bracket.pos}G", end ="")
+                        if _used[bracket]: print("\x1b[38;5;112m", end="")
+                        if _has_no_pair[bracket]: print("\x1b[48;5;196m", end="")
+                        print("^",end="")
+                        print("\x1b[0m",end="")
+                        print("\x1b[80G",end="", flush=True)
+                        sleep(0.01)
+
+                if _used[bracket] or _has_no_pair[bracket]:
                         continue
 
-                # if opening nested bracket, recurse
-                if cur_brack["string"] == starting_bracket and prev_brack["string"] == starting_bracket:
-                        brackets.insert(0, cur_brack)
-                        nest_bracks = _get_matching_bracket_positions(brackets, starting_bracket, ending_bracket)
-                        for b in nest_bracks: bracket_pairs.append(b)
-                        prev_brack = cur_brack
-                        continue
-
-                # if closing brackets, add to matching pairs
-                if cur_brack["string"] == ending_bracket and prev_brack["string"] == starting_bracket:
-                        bracket_pairs.append( (prev_brack["start"], cur_brack["end"]) )
-                        prev_brack = cur_brack
-                        continue
-
-                # if two closing brackets in a row, go break and go up a level in recursion
-                if cur_brack["string"] == ending_bracket and prev_brack["string"] == ending_bracket:
+                if bracket.str == closing_bracket_str:
+                        ending_pair = bracket
                         break
 
-        return bracket_pairs
+                if bracket.str == opening_bracket_str:
+                        starting = bracket
+                        _, ending = _get_matching_brackets(brackets, opening_bracket_str, closing_bracket_str, _used, _pairs, cur_pointer+1, _has_no_pair, _iter_counter)
+
+                        if ending != None and _used[starting] != True and _used[ending] != True:
+                                _pairs.append(starting)
+                                _pairs.append(ending)
+                                _used[starting] = True
+                                _used[ending] = True
+                                # overlapping ones can neither be used again
+                                for b in brackets:
+                                        if _is_overlapping(ending, b): _used[b] = True
+                                        if _is_overlapping(starting, b): _used[b] = True
+
+        if not ending_pair and starting_pair:
+                _has_no_pair[starting_pair] = True
+        if options.VERBOSE and _pointer == 0: print("bracket matching took:", round(time() - start_time, 5), "seconds")
+        return _pairs, ending_pair
+
 
 def find_bracketed_strings(text: str, starting_bracket: str, ending_bracket: str) -> tuple:
         """Finds the spans of bracketed substrings, including nested ones, in 'text'.
@@ -73,18 +135,27 @@ def find_bracketed_strings(text: str, starting_bracket: str, ending_bracket: str
         wrapper function for 'find_brackets' and 'get_matching_bracket_spans'
         """
         # if starting and ending brackets are the same, can't match them, dont try to find matching/nested ones
+        br_spans = []
         if starting_bracket == ending_bracket:
                 brackets = _find_brackets(text, starting_bracket, ending_bracket)
-                br_spans = []
-                if brackets:
-                        prev = brackets.pop(0)
-                        while len(brackets) > 0:
-                                cur = brackets.pop(0)
-                                br_spans.append((prev["start"],cur["end"]))
-                                prev = cur
+                if not brackets:
+                        return []
+
+                for i in range(0, len(brackets)-1, 2):
+                        left = brackets[i]
+                        left_pos = left.pos
+
+                        right = brackets[i+1]
+                        right_pos = right.pos + len(right.str)
+
+                        br_spans.append((left_pos, right_pos))
         else:
                 brackets = _find_brackets(text, starting_bracket, ending_bracket)
-                br_spans = _get_matching_bracket_positions(brackets, starting_bracket, ending_bracket)
+                matching_brackets,_ = _get_matching_brackets(brackets, starting_bracket, ending_bracket)
+                for i in range(0,len(matching_brackets),2):
+                        left_pos = matching_brackets[i].pos
+                        right_pos = matching_brackets[i+1].pos + len(matching_brackets[i+1].str)
+                        br_spans.append((left_pos, right_pos))
 
         bracketed_strs = []
         for span in br_spans:
@@ -133,8 +204,8 @@ def format_indents(text: str) -> str:
         def indent_sub_sections(lines: list, formatted_lines: list, self_d: int = 1):
                 """Recursively indent and linenumber definitions and their sub definitions.
                 """
-                indent_str = "\033[2m" + "▏   " + "\033[0m"
-                #indent_str = "\033[2m" + "|   " + "\033[0m"
+                indent_str = "\x1b[2m" + "▏   " + "\x1b[0m"
+                #indent_str = "\x1b[2m" + "|   " + "\x1b[0m"
 
                 linenum = 1
                 while len(lines) > 0:
@@ -154,11 +225,11 @@ def format_indents(text: str) -> str:
 
                         # '#:' -lines (examples)
                         elif re.search("^" + (self_d)*"#" + "\:" + "[^#\:\*]+.*$", line):
-                                f_line = indent_count * indent_str + "\033[31m" + line.removeprefix(self_d*"#" + ":").strip() + "\033[39m"
+                                f_line = indent_count * indent_str + "\x1b[31m" + line.removeprefix(self_d*"#" + ":").strip() + "\x1b[39m"
 
                         # '#*' -lines (quotation title/source)
                         elif re.search("^" + (self_d)*"#" + "\*" + "[^#\:\*]+.*$", line):
-                                f_line = indent_count * indent_str + "\033[3;31m" + line.removeprefix(self_d*"#" + "*").strip() + "\033[24;39m"
+                                f_line = indent_count * indent_str + "\x1b[3;31m" + line.removeprefix(self_d*"#" + "*").strip() + "\x1b[24;39m"
                                 continue # to exclude quotations
 
                         # '#:*' -lines (quotation itself)
@@ -202,7 +273,7 @@ def format_curly_bracketed_str(bracketed_str: str) -> str:
                         if s.startswith("year="):
                                 year = s.removeprefix("year=")
 
-                formatted_str = "\033[2m"
+                formatted_str = "\x1b[2m"
                 if "quote-book" in sections:
                         formatted_str += "(Quote book "
                 elif "quote-journal" in sections:
@@ -212,8 +283,8 @@ def format_curly_bracketed_str(bracketed_str: str) -> str:
                 elif "quote-text" in sections:
                         formatted_str += "(Quote text "
 
-                formatted_str += f'"{title}", {year})\033[22m "{quote}"'
-                formatted_str = ""
+                formatted_str += f'"{title}", {year})\x1b[22m "{quote}"'
+                formatted_str = "a"
                 return formatted_str
 
         # citations
@@ -226,22 +297,22 @@ def format_curly_bracketed_str(bracketed_str: str) -> str:
         # links?
         if "l" in sections:
                 sections.remove("l")
-                return "\033[31m" + ", ".join(sections) + "\033[39m"
+                return "\x1b[31m" + ", ".join(sections) + "\x1b[39m"
 
         # examples?
         if "coi" in sections:
                 sections.remove("coi")
-                return "\033[3;31m" + ", ".join(sections) + "\033[23;39m"
+                return "\x1b[3;31m" + ", ".join(sections) + "\x1b[23;39m"
         if "ux" in sections:
                 sections.remove("ux")
-                return "\033[3;31m" + ", ".join(sections) + "\033[23;39m"
+                return "\x1b[3;31m" + ", ".join(sections) + "\x1b[23;39m"
 
         # wikipedia articles?
         if "w" in sections:
-                return "\033[31m" + sections[len(sections)-1] + "\033[39m"
+                return "\x1b[31m" + sections[len(sections)-1] + "\x1b[39m"
 
 
-        formatted_str = "\033[3;31m(" + ", ".join(sections) + ")\033[23;39m"
+        formatted_str = "\x1b[3;31m(" + ", ".join(sections) + ")\x1b[23;39m"
         return formatted_str
 
 
@@ -253,10 +324,13 @@ def format_all_brackets(text: str, starting_bracket:str, ending_bracket:str, for
 
         Returns a modified copy of 'text'
         """
-        mod_text = text[:]
+        start_time = time()
+
+        mod_text = ""
         brackets = find_bracketed_strings(text, starting_bracket, ending_bracket)
-        while len(brackets) > 0:
-                target_bracket = brackets[0]
+        left_at = 0
+        for b in brackets:
+                target_bracket = b
 
                 bracket_span = target_bracket[1]
                 bracket_start = bracket_span[0]
@@ -264,9 +338,12 @@ def format_all_brackets(text: str, starting_bracket:str, ending_bracket:str, for
                 bracketed_str = target_bracket[0]
 
                 replacement = format_func(bracketed_str)
-                mod_text = mod_text[ : bracket_start] + replacement + mod_text[bracket_end : ]
+                mod_text += text[ left_at : bracket_start] + replacement
+                left_at = bracket_end
+        mod_text += text[ left_at : ]
 
-                brackets = find_bracketed_strings(mod_text, starting_bracket, ending_bracket)
+        end_time = time()
+        if options.VERBOSE: print("formatting took:", end_time - start_time, "seconds")
 
         return mod_text
 
@@ -274,29 +351,31 @@ def format_all_brackets(text: str, starting_bracket:str, ending_bracket:str, for
 def format_section_content(section: Section, lang: str) -> str:
         """ Returns the text content of a section formatted into a nicer format.
         """
+
         sect_text = section.content
         # add section header
-        sect_text = ("===" + "\033[1;34m" + section.title + "\033[22;39m" + "===" + '\n') + sect_text
+        sect_text = ("===" + "\x1b[1;34m" + section.title + "\x1b[22;39m" + "===" + '\n') + sect_text
 
         sect_text = _join_multiline_brackets(sect_text)
 
         sect_text = format_all_brackets(sect_text, "'''", "'''",
-                lambda s: "\033[1m" + s.strip("'") + "\033[22m" )
-        sect_text = format_all_brackets(sect_text, "\<ref", "\<\/ref\>",
+                lambda s: "\x1b[1m" + s.strip("'") + "\x1b[22m" )
+        sect_text = format_all_brackets(sect_text, "<ref", "</ref>",
                 lambda s: "" )
-        sect_text = format_all_brackets(sect_text, "\<ref", "\/\>",
+        sect_text = format_all_brackets(sect_text, "<ref", "/>",
                 lambda s: "" )
-        sect_text = format_all_brackets(sect_text, "\<code", "\<\/code\>",
+        sect_text = format_all_brackets(sect_text, "<code", "</code>",
                 lambda s: "" )
-        sect_text = format_all_brackets(sect_text, "\<code", "\/\>",
+        sect_text = format_all_brackets(sect_text, "<code", "/>",
                 lambda s: "" )
         sect_text = format_all_brackets(sect_text, "''", "''",
-                lambda s: "\033[3m" + s.strip("'") + "\033[23m" )
-        sect_text =  format_all_brackets(sect_text, "\[\[", "\]\]",
-                lambda s: "\033[35m" + s.strip("[]") + "\033[39m" )
+                lambda s: "\x1b[3m" + s.strip("'") + "\x1b[23m" )
+        sect_text =  format_all_brackets(sect_text, "[[", "]]",
+                lambda s: "\x1b[35m" + s.strip("[]") + "\x1b[39m" )
         sect_text = format_all_brackets(sect_text, "{{", "}}",
                 format_curly_bracketed_str)
 
         sect_text = format_indents(sect_text)
+
 
         return sect_text
