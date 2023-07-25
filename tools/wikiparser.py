@@ -2,11 +2,12 @@ import re
 import tools.languages as languages
 
 class Section:
-        def __init__(self, title: str, content: str, children: list=[]) -> 'Section':
+        def __init__(self, title: str, content: str, children: list=[], number:int=None) -> 'Section':
                 self.__children = children
                 self.__content = content
                 self.__depth = int(title.count("=") / 2)
                 self.__title = title.replace("=","").replace("}","").replace("{","").strip()
+                self.__number = number
 
         @property
         def title(self) -> str:
@@ -20,6 +21,9 @@ class Section:
         @property
         def content(self) -> str:
                 return self.__content
+        @property
+        def number(self) -> int:
+                return self.__number
 
         @children.setter
         def children(self, children):
@@ -45,7 +49,7 @@ class Section:
                 """
                 # TODO add wildcards *
                 matches = []
-                if self.title.lower() == section_title.lower():
+                if self.title.lower() == section_title.lower() or str(self.number) == section_title.lower():
                         matches.append(self)
 
                 for c in self.children:
@@ -117,7 +121,7 @@ class WikiPage:
                 self.__site = site
 
 
-        def __get_children(self, section_tuples: list, child_depth: int=1) -> Section:
+        def __get_children(self, section_tuples: list, child_depth: int=1, _sect_num:int=1) -> Section:
                 """ Recursively arrange a dictionary of wiki titles and their contents into a parent-child tree.
 
                 Section_tuples is a list of tuples which contain the section title and the text content assosiated with that title.
@@ -129,16 +133,20 @@ class WikiPage:
                 i = 0
                 while i < len(section_tuples):
                         sect_title = section_tuples[i][0]
-                        sect_depth = int(sect_title.count("=") / 2)
-                        if sect_depth == child_depth:
-                                child_sect = Section(sect_title, section_tuples[i][1], [])
+                        cur_depth = int(sect_title.count("=") / 2)
+
+                        if cur_depth == child_depth:
+                                child_sect = Section(sect_title, section_tuples[i][1], [], _sect_num)
                                 section_tuples.pop(0)
                                 child_children = self.__get_children(section_tuples, child_depth+1)
                                 child_sect.children = child_children
                                 children.append(child_sect)
                                 i-=1
-                        elif sect_depth == child_depth - 1:
+
+                        elif cur_depth == child_depth - 1:
                                 break
+
+                        _sect_num += 1
                         i+=1
 
                 return children
