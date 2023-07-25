@@ -25,6 +25,11 @@ def print_keywords() -> None:
 
         return None
 
+def print_path_explanation() -> None:
+        print("section-path: ")
+        print("  Chooses which section's content to display.")
+        print("  Either the wanted section's name, or a path of section names/number to the wanted section.")
+
 def print_options() -> None:
         print(f"Options:")
         for opt_names, opt_desc in options.VALID_OPTIONS.items():
@@ -45,6 +50,8 @@ def print_help_msg() -> None:
         print_supported_languages()
         print()
         print_keywords()
+        print()
+        print_path_explanation()
         return None
 
 def print_saved_searches() -> int:
