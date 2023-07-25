@@ -3,6 +3,7 @@ from tools.wikiparser import Section
 from time import sleep
 from time import time
 from tools import options
+from tools import languages
 from collections import namedtuple
 
 Bracket = namedtuple('Bracket', ['pos', 'str'])
@@ -284,15 +285,17 @@ def format_curly_bracketed_str(bracketed_str: str) -> str:
                         formatted_str += "(Quote text "
 
                 formatted_str += f'"{title}", {year})\x1b[22m "{quote}"'
-                formatted_str = "a"
                 return formatted_str
 
-        # citations
         if "Cite-web" in sections or ... in sections or ... in sections:
                 ...
 
         sections.remove("en") if "en" in sections else None
-        sections.remove("lb") if "lb" in sections else None
+
+        if "lb" in sections:
+                sections.remove("lb")
+                if options.COMPACT:
+                        return ""
 
         # links?
         if "l" in sections:

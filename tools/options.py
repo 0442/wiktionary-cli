@@ -14,7 +14,8 @@ VALID_OPTIONS = {
         ("-f", "--force-web") : "Fetch page from wiki even if a local copy exists.",
         ("-ls", "--list-searches") : "Print saved searches and exit.",
         ("-lp", "--list-pages") : "Print saved pages and exit.",
-        ("-v", "--verbose") : "Verbose output."
+        ("-c", "--compact") : "Output pages in a more compact format.",
+        ("-v", "--verbose") : "Verbose output.",
 }
 
 VALID_OPTIONS_LIST = reduce(lambda o,l: o+l, VALID_OPTIONS.keys())
@@ -33,6 +34,7 @@ def init(args: list[str]) -> int:
         global FORCE_WEB
         global PRINT_HELP
         global VERBOSE
+        global COMPACT
 
         DO_FORMATTING = False if "-r" in OPTIONS or "--raw" in OPTIONS else True
         DO_SEARCH = True if "-s" in OPTIONS or "--search" in OPTIONS else False
@@ -41,5 +43,7 @@ def init(args: list[str]) -> int:
         LIST_PAGES = True if "-lp" in OPTIONS or "--list-pages" in OPTIONS else False
         PRINT_HELP = True if "-h" in OPTIONS or "--help" in OPTIONS else False
         VERBOSE = True if "-v" in OPTIONS or "--verbose" in OPTIONS else False
+        COMPACT = True if "-c" in OPTIONS or "--compact" in OPTIONS else False
+
 
         return 1 if UNKNOWN_OPTIONS else 0
