@@ -12,8 +12,11 @@ DB_PAGE_EXPIRATION_TIME = "10d"
 # formatting
 INDENTATION_STR = "|   "
 
+# cli
+PATH_SEP = "."
+
 # querying wiki
-WIKI_SEARCH_RESULTS_LIMIT = 10
+WIKI_SEARCH_RESULTS_LIMIT = 20
 
 # not yet implemented:
 DB_SAVE_FAILED_SEARCHES = False

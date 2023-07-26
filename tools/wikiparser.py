@@ -1,5 +1,7 @@
 import re
 import tools.languages as languages
+import tools.options as options
+from tools.config import PATH_SEP
 
 class Section:
         def __init__(self, title: str, content: str, children: list=[], number:int=None) -> 'Section':
@@ -43,6 +45,13 @@ class Section:
                         count += child.count_children()
                 return count
 
+        def __all_children(self):
+                """Returns a list of all direct and indirect children"""
+                c = self.__children
+                for dc in self.__children:
+                        c += dc.__all_children()
+                return c
+
         def __get_sections(self, section_title: str) -> list['Section']:
                 """ Return all sections with the given title.
                 Case insensitive.
@@ -60,29 +69,22 @@ class Section:
 
                 return matches
 
-        def find(self, sect_path: str) -> 'Section':
-                """Return the first occurence of a section with the given title.
+        def find(self, search: str) -> list['Section']:
+                """Return sections with the given title.
 
                 Return None if no section found.
                 Either a section name can be given or a path, eg. English/Noun
                 Search is case insensitive.
                 """
-                # format path
-                path = sect_path.split("/")
-                path = [s.strip(" /").lower() for s in path if s]
+                result = self._find_by_path(search)
+                if len(result) != 0:
+                        return result
+                else:
+                        return self._find_all(search)
 
-                # find the wanted section
-                sect = self
-                for s in path:
-                        matches = sect.__get_sections(s)
-                        if len(matches) == 0:
-                                return None
-                        else:
-                                sect = matches[0]
 
-                return sect
 
-        def find_all(self, section_title: str) -> list['Section']:
+        def _find_all(self, section_title: str) -> list['Section']:
                 """
                 Return all sections with the given title.
                 """
@@ -90,11 +92,57 @@ class Section:
                 matches = self.__get_sections(section_title)
                 return matches
 
-        def __str__(self, relative_depth: int=1):
+        def _find_one(self, section_title: str) -> 'Section':
+                """Return first section with given title
+                returns None if no section found
+                """
+                matches = self.__get_sections(section_title)
+                if len(matches) > 0:
+                        return matches[0]
+                else:
+                        return None
+
+        def _find_by_path(self, sect_path:str|list, _results:list['Section']=[]):
+                """Return Section(s) to which sect_path points.
+                If path starts with path sep, next sections are strictrly searched from this sections children.
+                If path does not start with path sep, the first subsection match, which may not be a direct child of this section, is used as root.
+                """
+                # convert str path to list
+                if sect_path.__class__ is str:
+                        sect_path = sect_path.split(PATH_SEP)
+                sect_path = [s.strip().lower() for s in sect_path if s]
+                if options.VERBOSE: print(f'remaining path {sect_path}; at "{self.title}"; children: {[ s.title for s in self.__children]}')
+
+
+
+                if len(sect_path) == 0:
+                        return [ self ]
+
+                next_sect_search = sect_path[0]
+                next_sects = []
+
+                for s in self.children:
+                        if s.title.lower() == next_sect_search or str(s.number) == next_sect_search :
+                                next_sects.append(s)
+                        elif next_sect_search == "*":
+                                next_sects.append(s)
+                        elif next_sect_search == "**":
+                                next_sects.append(s)
+                                next_sects += s.__all_children()
+
+                if len(sect_path) >= 1:
+                        new_results = []
+                        for s in next_sects:
+                                new_results += s._find_by_path(sect_path[1:], _results)
+                        _results = list(set(_results + new_results))
+
+                return _results
+
+        def __str__(self, _relative_depth: int=1):
                 #string = (relative_depth-1) * "\033[2m▏  \033[0m" + self.__title
-                string = (relative_depth-1) * "#" + self.__title
+                string = (_relative_depth-1) * "#" + self.__title
                 for child in self.__children:
-                        string += '\n' + child.__str__(relative_depth=relative_depth+1)
+                        string += '\n' + child.__str__(_relative_depth+1)
 
                 return string
 
@@ -105,10 +153,10 @@ class WikiPage:
                 "wiktionary"
         ]
 
-        sect_matching_keywords = [
-                ("@d", "@definitions"),
-                ("@t", "@translations"),
-        ]
+        search_keywords = {
+                "definitions": ["@d", "@definitions"],
+                "translations": ["@t", "@translations"],
+        }
 
         def __init__(self, page_text: str, page_title: str, language: str, site) -> 'WikiPage':
                 if site not in WikiPage.valid_wiki_sites:
@@ -190,35 +238,37 @@ class WikiPage:
 
                 return page_root_section[0]
 
-        def find_page_sections(self, path: str) -> list[Section] | None:
+        def find_page_sections(self, search: str) -> list[Section] | None:
                 """Find sections from this page.
 
-                Returns a list of sections that match the path/search. If no matches are found, returns None
+                Returns a list of sections that match the search. If no matches are found, returns None
 
-                Path can either be a path to a section or a keyword that matches a group of sections, e.g. 'definitions' for wiktionary pages, which matches Noun, Verb, etc.. sections
+                Search can either be a path to a section, a section name, or a keyword that matches a group of sections, e.g. 'definitions' for wiktionary pages, which matches Noun, Verb, etc.. sections
                 """
 
                 root_section = self.__root_section
 
                 matching_sections = []
 
-                if path.lower() == "@d" or path.lower() == "@definitions":
+                if search.lower() in self.search_keywords["definitions"]:
                         for wc in languages.definitions[self.__language]:
-                                target_sect = root_section.find(languages.abbrev_table[self.__language][self.__language] + "/" + wc)
-                                if target_sect:
-                                        matching_sections.append(target_sect)
+                                path_to_def = f"{languages.abbrev_table[self.__language][self.__language]}{PATH_SEP}**{PATH_SEP}{wc}"
+                                results = root_section.find(path_to_def)
+                                if results:
+                                        matching_sections += results
 
-                elif path.lower() == "@t" or path.lower() == "@translations":
+                elif search.lower() in self.search_keywords["translations"]:
                         for wc in languages.definitions[self.__language]:
-                                target_sect = root_section.find(languages.abbrev_table[self.__language][self.__language] + "/" + wc + "/" + languages.translations[self.__language])
-                                if target_sect:
-                                        target_sect.title += " " + "(" + wc + ")"
-                                        matching_sections.append(target_sect)
+                                path_to_tr = f"{languages.abbrev_table[self.__language][self.__language]}{PATH_SEP}**{PATH_SEP}{wc}{PATH_SEP}{languages.translations[self.__language]}"
+                                results = root_section.find(path_to_tr)
+                                if results:
+                                        results.title += " " + "(" + wc + ")"
+                                        matching_sections += (results)
 
                 else:
-                        target_sect = root_section.find(path)
-                        if target_sect:
-                                matching_sections.append(target_sect)
+                        results = root_section.find(search)
+                        if results:
+                                matching_sections += results
 
                 return matching_sections
 
