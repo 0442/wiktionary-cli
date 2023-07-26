@@ -51,7 +51,7 @@ def _is_overlapping(b1:Bracket, b2:Bracket) -> bool:
         return result
 
 
-def _get_matching_brackets(brackets: list[Bracket], opening_bracket_str: str, closing_bracket_str: str, _used:dict=None, _pairs:list=None, _pointer:int=0, _has_no_pair:list=None, _iter_counter:int=0) -> list[Bracket]:
+def _get_matching_brackets(brackets: list[Bracket], opening_bracket_str: str, closing_bracket_str: str, _used:dict=None, _pairs:list=None, _pointer:int=0, _has_no_pair:list=None, _iter_counter:int=0) -> tuple[list[Bracket], Bracket]:
         """Returns a list of Brackets, where every opening bracket is followed by it's closing bracket.
 
         finds the pairs from the output of _find_brackets().
@@ -77,7 +77,7 @@ def _get_matching_brackets(brackets: list[Bracket], opening_bracket_str: str, cl
                 bracket = brackets[cur_pointer]
 
                 # printing, for debugging
-                if options.VERBOSE == True and options.PRINT_HELP:
+                if options.VERBOSE == True:
                         print('\x1b[1F',end="")
                         for b in brackets:
                                 if b in _pairs:
@@ -151,6 +151,7 @@ def find_bracketed_strings(text: str, starting_bracket: str, ending_bracket: str
 
                         br_spans.append((left_pos, right_pos))
         else:
+                if options.VERBOSE: print(text)
                 brackets = _find_brackets(text, starting_bracket, ending_bracket)
                 matching_brackets,_ = _get_matching_brackets(brackets, starting_bracket, ending_bracket)
                 for i in range(0,len(matching_brackets),2):
