@@ -166,35 +166,22 @@ def find_bracketed_strings(text: str, starting_bracket: str, ending_bracket: str
         return bracketed_strs
 
 
-
-def _join_multiline_brackets(text: str) -> str:
+def _join_multiline_brackets(text:str) -> str:
         """Returns a copy of 'text' where brackets that span over multiple lines are joined onto the same line.
-
-        Some brackets' contents are split over multiple lines. Info inside brackets is often separated with '|'.
-        Long bracketed strings are linebroken at these separators so that the following lines belonging inside these brackets start with '|'.
-        This function joins these lines together.
+        Joins lines beginning with "|" together with their preceding lines.
         """
-        lines = text.splitlines()
-
-        if len(lines) < 1:
-                return lines
-
         joined_lines = []
-        prev_line = lines.pop(0)
-        while len(lines) > 0:
-                cur_line = lines.pop(0)
-                if re.match("^[ \| }} \]\] ]", cur_line):
-                        prev_line += cur_line
-                        continue
-
+        lines = text.splitlines()
+        for line_i in range(len(lines)):
+                line = lines[line_i]
+                if line.startswith("|"):
+                        prev_line = joined_lines.pop()
+                        joined_line = prev_line + line
+                        joined_lines.append(joined_line)
                 else:
-                        joined_lines.append(prev_line)
-                        prev_line = cur_line
-
-        joined_lines.append(prev_line)
+                        joined_lines.append(line)
 
         return '\n'.join(joined_lines)
-
 
 
 def format_indents(text: str) -> str:
@@ -356,12 +343,10 @@ def format_all_brackets(text: str, starting_bracket:str, ending_bracket:str, for
 def format_section_content(section: Section, lang: str) -> str:
         """ Returns the text content of a section formatted into a nicer format.
         """
-
         sect_text = section.content
+        sect_text = _join_split_lines(sect_text)
         # add section header
         sect_text = ("===" + "\x1b[1;34m" + section.title + "\x1b[22;39m" + "===" + '\n') + sect_text
-
-        sect_text = _join_multiline_brackets(sect_text)
 
         sect_text = format_all_brackets(sect_text, "'''", "'''",
                 lambda s: "\x1b[1m" + s.strip("'") + "\x1b[22m" )
@@ -381,6 +366,5 @@ def format_section_content(section: Section, lang: str) -> str:
                 format_curly_bracketed_str)
 
         sect_text = format_indents(sect_text)
-
 
         return sect_text
