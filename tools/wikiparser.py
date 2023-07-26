@@ -128,6 +128,7 @@ class Section:
                                 next_sects.append(s)
                         elif next_sect_search == "**":
                                 next_sects.append(s)
+                                next_sects.append(self)
                                 next_sects += s.__all_children()
 
                 if len(sect_path) >= 1:
