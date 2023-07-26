@@ -228,6 +228,7 @@ def format_indents(text: str) -> str:
                         # '#:' -lines (examples)
                         elif re.search("^" + (self_d)*"#" + "\:" + "[^#\:\*]+.*$", line):
                                 f_line = indent_count * indent_str + "\x1b[31m" + line.removeprefix(self_d*"#" + ":").strip() + "\x1b[39m"
+                                if options.COMPACT: continue
 
                         # '#*' -lines (quotation title/source)
                         elif re.search("^" + (self_d)*"#" + "\*" + "[^#\:\*]+.*$", line):
@@ -375,7 +376,7 @@ def format_section_content(section: Section, lang: str) -> str:
         sect_text = format_all_brackets(sect_text, "''", "''",
                 lambda s: "\x1b[3m" + s.strip("'") + "\x1b[23m" )
         sect_text =  format_all_brackets(sect_text, "[[", "]]",
-                lambda s: "\x1b[35m" + s.strip("[]") + "\x1b[39m" )
+                lambda s: "\x1b[35m" + s.strip("[]").replace(" ", "·") + "\x1b[39m" )
         sect_text = format_all_brackets(sect_text, "{{", "}}",
                 format_curly_bracketed_str)
 
