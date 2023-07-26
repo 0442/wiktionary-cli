@@ -16,19 +16,20 @@ def print_supported_languages() -> None:
         return None
 
 def print_keywords() -> None:
-        keywords = WikiPage.sect_matching_keywords
+        keywords = WikiPage.search_keywords
 
         print("Keywords:")
-        for k in keywords:
+        for _,k in keywords.items():
                 print("  ", end="")
                 print(" ".join(k))
 
         return None
 
 def print_path_explanation() -> None:
-        print("section-path: ")
-        print("  Chooses which section's content to display.")
-        print("  Either the wanted section's name, or a path of section names/number to the wanted section.")
+        print("Section path: ")
+        print('  Either the wanted section\'s name, or a "." separated list of section names/numbers to the wanted section.')
+        print('  If section-path starts with ".", path is walked from root. Otherwise from first occurence of first part of path.')
+        print('  If section-path ends with ".", matching section\'s structure is printed. Otherwise it\'s content is printed.')
 
 def print_options() -> None:
         print(f"Options:")
