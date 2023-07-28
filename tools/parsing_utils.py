@@ -344,7 +344,7 @@ def format_section_content(section: Section, lang: str) -> str:
         """ Returns the text content of a section formatted into a nicer format.
         """
         sect_text = section.content
-        sect_text = _join_split_lines(sect_text)
+        sect_text = _join_multiline_brackets(sect_text)
         # add section header
         sect_text = ("===" + "\x1b[1;34m" + section.title + "\x1b[22;39m" + "===" + '\n') + sect_text
 
