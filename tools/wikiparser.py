@@ -263,7 +263,8 @@ class WikiPage:
                                 path_to_tr = f"{languages.abbrev_table[self.__language][self.__language]}{PATH_SEP}**{PATH_SEP}{wc}{PATH_SEP}{languages.translations[self.__language]}"
                                 results = root_section.find(path_to_tr)
                                 if results:
-                                        results.title += " " + "(" + wc + ")"
+                                        for r in results:
+                                            r.title += " " + "(" + wc + ")"
                                         matching_sections += (results)
 
                 else:
