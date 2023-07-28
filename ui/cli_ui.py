@@ -3,6 +3,7 @@ from services.db import Database
 from tools.wikiparser import WikiPage, Section
 import tools.parsing_utils as parsing
 from tools import options
+from tools import config
 
 # Functions for printing some output
 def word_not_found(word: str, search_lang: str) -> None:
@@ -133,8 +134,11 @@ def print_sections(page: WikiPage, path: str):
                 print(f"No matching sections for \"{path}\"")
                 return 1
 
-        # when path ends in '/', print matching sections' subsection structures
-        if path.endswith("/"):
+        # path starting with PATH_SEP means path from root.
+        # when path ends in PATH_SEP, print matching sections' subsection structures.
+        # A path consisting of a single PATH_SEP is considered to not 'end' in PATH_SEP, i.e. prints root section's contents.
+        # A path consisting of a Two PATH_SEPs is considered to 'end' in PATH_SEP, i.e. prints root section's structure.
+        if path.endswith(config.PATH_SEP) and len(path) > 1:
                 for s in matching_sects:
                         text = s.__str__()
                         if options.DO_FORMATTING:
