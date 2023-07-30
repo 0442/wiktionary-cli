@@ -1,0 +1,82 @@
+#compdef wiktionary
+
+(( $+functions[_wiktionary_cmds] )) || _wiktionary_cmds() {
+	local IFS=$'\n'
+	local -a commands languages
+	commands=(
+		'd:dictionary' 
+		'a:article' 
+	)
+	languages=(
+		'en'
+		'fi'
+	)
+
+	if (( CURRENT == 1 )); then
+		_describe -t commands 'command' commands
+
+	elif (( CURRENT == 2 )); then
+		_describe -t languages 'page language' languages
+
+	elif (( CURRENT == 3 )); then
+		local cmd=${words[1]}
+
+		if [[ $cmd == "d" ]]; then
+			_message "search dictionary..."
+		elif [[ $cmd == "a" ]]; then
+			_message "serach article..."
+		fi
+
+	elif (( CURRENT == 4 )); then
+		local -a sections fullSectPaths
+		local cmd lang search sectionPath completePathPart
+		cmd=${words[1]}
+		lang=${words[2]}
+		search=${words[3]}
+		sectionPath=${words[4]}
+		completePathPart=$(echo $sectionPath | tr -d '\\' | sed -nr 's/(([^\.]*\.)+).*/\1/p') 
+		lastPathPart=$(echo $sectionPath | tr -d '\\' | sed -nr 's/(([^\.]*\.)+).*/\2/p') 
+
+		sections=($(\
+			wiktionary -r $cmd $lang $search $completePathPart | \
+			grep -E "^#[^#]*$" | \
+			sed -nr 's/^#([^#]*).*$/\1/p' \
+		))
+		fullSectPaths=${sections[@]}
+
+		i=1
+		while [[ $i -lt ${#sections} ]]; do
+			fullSectPaths[$i]="$completePathPart${sections[$i]}"
+			i=$(($i+1))
+		done
+		if [[ ${#sections} != 0 ]]; then
+			if [[ $completePathPart == '' ]]; then
+				_message "sections on page '$search'"
+				compadd -S '.' $sections 
+			else
+				_message "subsections in '$lastPathPart'"
+				compadd -S '.' -p $completePathPart $sections
+			fi
+		else
+			if [[ $completePathPart == '' ]]; then
+				_message "no page for '$search'"
+			else
+				_message "no subsections in '$lastPathPart'"
+			fi
+		fi
+	fi
+}
+
+local IFS=$'\n'
+local -a wiktionary_options
+wiktionary_options=(
+	{-h,--help}'[Print help message]'
+	{-r,--raw}'[Don"t format output]'
+	{-s,--search}'[Search]'
+	{-f,--force-web}'[Skip local copy]'
+	{-ls,--list-searches}'[Print saved searches]'
+	{-lp,--list-pages}'[Print saved pages]'
+	{-c,--compact}'[Compact output]'
+	{-v,--verbose}'[Verbose output]'
+)
+_arguments $wiktionary_options "*::wiktionary commands:_wiktionary_cmds" 
