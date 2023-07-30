@@ -17,7 +17,6 @@ translations = {
 
 supported = ["en", "fi"]
 
-# lookup tables for how languages
 abbrev_table = {
         "en" : {
                 "en" : "English",

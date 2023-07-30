@@ -1,13 +1,13 @@
 import tools.languages as languages
-from services.db import Database
 from tools.wikiparser import WikiPage, Section
 import tools.parsing_utils as parsing
 from tools import options
 from tools import config
 
 # Functions for printing some output
-def word_not_found(word: str, search_lang: str) -> None:
-        print(f"Cannot find a wiktionary entry for '{word}' in {languages.abbrev_table['en'][search_lang]}.")
+
+def not_found(word: str, search_lang: str) -> None:
+        print(f"Cannot find an entry for '{word}' in {languages.abbrev_table['en'][search_lang]}.")
         return None
 
 def print_supported_languages() -> None:
@@ -40,8 +40,8 @@ def print_options() -> None:
                 print("  " + options_str + left_offset + opt_desc)
 
 def print_help_msg() -> None:
-        dict_commands = "|".join(options.DICTIONARY_MODE_NAMES)
-        article_commands = "|".join(options.ARTICLE_MODE_NAMES)
+        dict_commands = "|".join(options.DICTIONARY_COMMAND_NAMES)
+        article_commands = "|".join(options.ARTICLE_COMMAND_NAMES)
 
         print("Usage:")
         print(f"  wiktionary {dict_commands} <language> <title> [<section-path>|<keyword>]")
@@ -56,12 +56,9 @@ def print_help_msg() -> None:
         print_path_explanation()
         return None
 
-def print_saved_searches() -> int:
+def print_saved_searches(searches:list[tuple]|None) -> int:
         """Print searches that are saved into the database
         """
-
-        db = Database()
-        searches = db.get_saved_searches()
         if not searches:
                 print("No saved searches.")
                 return 1
@@ -88,16 +85,12 @@ def print_saved_searches() -> int:
 
         return 0
 
-def print_saved_pages() -> int:
+def print_saved_pages(pages:list[tuple]) -> int:
         """Print pages that are saved into the local database
         """
-
-        db = Database()
-        pages = db.get_saved_pages()
         if not pages:
                 print("No saved searches.")
                 return 1
-
 
         if options.DO_FORMATTING:
                 groups = _group_by_dates(pages)
@@ -117,7 +110,7 @@ def print_saved_pages() -> int:
 
         return 0
 
-def print_sections(page: WikiPage, path: str):
+def print_sections(page: WikiPage, path:str|None):
         # Only print page structure (__str__ of page's root section) when no path given
         if not path:
                 if not options.DO_FORMATTING:
@@ -176,9 +169,6 @@ def print_translations(sections: list[Section], target_lang: str) -> dict:
                                 translations[cur_tr_top].append(l)
 
         return translations
-
-
-
 
 def _group_by_dates(list: list[tuple]) -> dict:
         """Groups tuples with id, text, datetime and count, into a dictionary by date id, text, time and count.

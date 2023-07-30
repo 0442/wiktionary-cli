@@ -1,6 +1,6 @@
 import re
 import tools.languages as languages
-import tools.options as options
+from tools.logger import log
 from tools.config import PATH_SEP
 
 class Section:
@@ -111,7 +111,7 @@ class Section:
                 if sect_path.__class__ is str:
                         sect_path = sect_path.split(PATH_SEP)
                 sect_path = [s.strip().lower() for s in sect_path if s]
-                if options.VERBOSE: print(f'remaining path {sect_path}; at "{self.title}"; children: {[ s.title for s in self.__children]}')
+                log(f'remaining path {sect_path}; at "{self.title}"; children: {[ s.title for s in self.__children]}')
 
 
 

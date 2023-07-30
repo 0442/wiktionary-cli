@@ -1,6 +1,6 @@
 import requests
 import json
-import re
+from tools.logger import log
 
 import tools.languages as languages
 import tools.config as config
@@ -34,7 +34,7 @@ class WikiApi:
     def search(self, search_word: str) -> list:
         """Does a search on wiki and returns the results in a list.
 
-        Returns None if no results found.
+        Returns empty list if no results found.
         """
         result_limit = config.WIKI_SEARCH_RESULTS_LIMIT
         if not 1 <= result_limit <= 500:
@@ -44,17 +44,14 @@ class WikiApi:
         req = requests.get(search_url)
         result_json = json.loads(req.text)
         search_results = result_json[1]
-        if len(search_results) == 0:
-            return None
-        else:
-            return search_results
+        return search_results
 
 
-    def get_page(self, page_name: str) -> tuple:
+    def get_page(self, page_name: str) -> tuple[str, str, str]:
         """Get a wiki page's title, id and text content by page name.
 
         If page is found, returns a tuple with title, pageid and wikitext.
-        If an error occurs, returns None, error code and error info.
+        If page not found, returns None.
         """
         url = self.__base_url + "&action=parse" + "&page=" + page_name + "&prop=wikitext"
         req = requests.get(url)
@@ -70,7 +67,9 @@ class WikiApi:
             resp_json = json.loads(req.text)["error"]
             error_code = resp_json["code"]
             error_info = resp_json["info"]
-            return (None, error_code, error_info)
+            log("Error in wiki_api.get_page:", error_code)
+            log("Error in wiki_api.get_page:", error_info)
+            return None
 
 
 

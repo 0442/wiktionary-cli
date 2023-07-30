@@ -3,7 +3,7 @@ from tools.wikiparser import Section
 from time import sleep
 from time import time
 from tools import options
-from tools import languages
+from tools.logger import log
 from collections import namedtuple
 
 Bracket = namedtuple('Bracket', ['pos', 'str'])
@@ -124,7 +124,7 @@ def _get_matching_brackets(brackets: list[Bracket], opening_bracket_str: str, cl
 
         if not ending_pair and starting_pair:
                 _has_no_pair[starting_pair] = True
-        if options.VERBOSE and _pointer == 0: print("bracket matching took:", round(time() - start_time, 5), "seconds")
+        if _pointer == 0: log("bracket matching took:", round(time() - start_time, 5), "seconds")
         return _pairs, ending_pair
 
 
@@ -151,7 +151,7 @@ def find_bracketed_strings(text: str, starting_bracket: str, ending_bracket: str
 
                         br_spans.append((left_pos, right_pos))
         else:
-                if options.VERBOSE: print(text)
+                log(text)
                 brackets = _find_brackets(text, starting_bracket, ending_bracket)
                 matching_brackets,_ = _get_matching_brackets(brackets, starting_bracket, ending_bracket)
                 for i in range(0,len(matching_brackets),2):
@@ -335,7 +335,7 @@ def format_all_brackets(text: str, starting_bracket:str, ending_bracket:str, for
         mod_text += text[ left_at : ]
 
         end_time = time()
-        if options.VERBOSE: print("formatting took:", end_time - start_time, "seconds")
+        log("formatting took:", end_time - start_time, "seconds")
 
         return mod_text
 

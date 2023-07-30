@@ -1,11 +1,8 @@
 from functools import reduce
+from sys import argv
 
-#TODO add more OPTIONS
-# - option for including quotations in dictionary output
-# - option for resolving redirects
-
-DICTIONARY_MODE_NAMES = ["d", "dictionary"]
-ARTICLE_MODE_NAMES = ["a", "article", "wikipedia"]
+DICTIONARY_COMMAND_NAMES = ["d", "dictionary"]
+ARTICLE_COMMAND_NAMES = ["a", "article", "wikipedia"]
 
 VALID_OPTIONS = {
         ("-h", "--help") : "Print this message and exit.",
@@ -20,11 +17,17 @@ VALID_OPTIONS = {
 
 VALID_OPTIONS_LIST = reduce(lambda o,l: o+l, VALID_OPTIONS.keys())
 
-def init(args: list[str]) -> int:
+def init() -> None:
+        """Sets some constants from command line arguments.
+        Raises errors if arguments are invalid.
+        Returns None.
+        """
+        global POSITIONAL_ARGS
         global OPTIONS
         global UNKNOWN_OPTIONS
 
-        OPTIONS = [a for a in args if a.startswith("-")]
+        POSITIONAL_ARGS = [a for a in argv[1:] if a not in VALID_OPTIONS_LIST]
+        OPTIONS = [a for a in argv[1:] if a.startswith("-")]
         UNKNOWN_OPTIONS  = [opt for opt in OPTIONS if opt not in VALID_OPTIONS_LIST]
 
         global DO_FORMATTING
@@ -45,5 +48,12 @@ def init(args: list[str]) -> int:
         VERBOSE = True if "-v" in OPTIONS or "--verbose" in OPTIONS else False
         COMPACT = True if "-c" in OPTIONS or "--compact" in OPTIONS else False
 
+        if UNKNOWN_OPTIONS:
+                raise Exception(f'Unkown options: {", ".join(UNKNOWN_OPTIONS)}')
+        elif len(POSITIONAL_ARGS) < 3:
+                raise Exception('Not enough arguments.')
+        elif len(POSITIONAL_ARGS) > 4:
+                raise Exception('Too many arguments.')
+        elif POSITIONAL_ARGS[0] not in DICTIONARY_COMMAND_NAMES and POSITIONAL_ARGS[0] not in ARTICLE_COMMAND_NAMES:
+                raise Exception('Invalid arguments.')
 
-        return 1 if UNKNOWN_OPTIONS else 0

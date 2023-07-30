@@ -1,56 +1,42 @@
 #!/bin/env python3
-import sys
-
-from ui import cli_ui
-from services import services
-from services.db import Database
+from services import commands
 from tools import options
 
-
 def main() -> int:
-        # handle options
-
-        if options.init(sys.argv) == 1:
-                print( f"Unknown options: { ', '.join(options.UNKNOWN_OPTIONS) }\n" ) if len(options.UNKNOWN_OPTIONS) > 0 else None
-                cli_ui.print_help_msg()
+        try:
+                options.init()
+        except Exception as e:
+                print(e)
+                commands.help()
                 return 1
 
         if options.PRINT_HELP:
-                cli_ui.print_help_msg()
+                commands.help()
+                return 0
+        elif options.LIST_SEARCHES:
+                commands.list_saved_searches()
+                return 0
+        elif options.LIST_PAGES:
+                commands.list_saved_pages()
                 return 0
 
-        if options.LIST_SEARCHES:
-                cli_ui.print_saved_searches()
-                return 0
+        command = options.POSITIONAL_ARGS[0]
+        language = options.POSITIONAL_ARGS[1]
+        word = options.POSITIONAL_ARGS[2]
+        # optional arg
+        path = options.POSITIONAL_ARGS[3] if len(options.POSITIONAL_ARGS) == 4 else None
 
-        if options.LIST_PAGES:
-                cli_ui.print_saved_pages()
-                return 0
+        if command in options.DICTIONARY_COMMAND_NAMES:
+                site = "wiktionary"
+        elif command in options.ARTICLE_COMMAND_NAMES:
+                site = "wikipedia"
 
-
-
-        # handle positional args
-
-        positional_args = [a for a in sys.argv[1:] if a not in options.VALID_OPTIONS_LIST]
-
-        if len(positional_args) == 0:
-                cli_ui.print_help_msg()
-                return 1
-
-        if positional_args[0] in options.DICTIONARY_MODE_NAMES:
-                page = services.fetch_wiki_page(positional_args[1:], "wiktionary")
-                path = positional_args[3] if len(positional_args) >= 4 else None
-                return cli_ui.print_sections(page, path) if page else 1
-
-        elif positional_args[0] in options.ARTICLE_MODE_NAMES:
-                page = services.fetch_wiki_page(positional_args[1:], "wikipedia")
-                path = positional_args[3] if len(positional_args) >= 4 else None
-                return cli_ui.print_sections(page, path) if page else 1
-
+        if options.DO_SEARCH:
+                commands.search_wiki(word, language, site)
         else:
-                cli_ui.print_help_msg()
-                return 1
+                commands.fetch_wiki_page(word, language, path, site)
 
+        return 0
 
 if __name__ == "__main__":
         exit(main())
