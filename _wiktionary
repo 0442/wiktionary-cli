@@ -2,14 +2,18 @@
 
 (( $+functions[_wiktionary_cmds] )) || _wiktionary_cmds() {
 	local IFS=$'\n'
-	local -a commands languages
+	local -a commands languages keywords
 	commands=(
-		'd:dictionary' 
-		'a:article' 
+		'd:dictionary'
+		'a:article'
 	)
 	languages=(
 		'en'
 		'fi'
+	)
+	keywords=(
+		'@d:get definitions'
+		'@t:get translations'
 	)
 
 	if (( CURRENT == 1 )); then
@@ -34,8 +38,8 @@
 		lang=${words[2]}
 		search=${words[3]}
 		sectionPath=${words[4]}
-		completePathPart=$(echo $sectionPath | tr -d '\\' | sed -nr 's/(([^\.]*\.)+).*/\1/p') 
-		lastPathPart=$(echo $sectionPath | tr -d '\\' | sed -nr 's/(([^\.]*\.)+).*/\2/p') 
+		completePathPart=$(echo $sectionPath | tr -d '\\' | sed -nr 's/(([^\.]*\.)+).*/\1/p')
+		lastPathPart=$(echo $sectionPath | tr -d '\\' | sed -nr 's/(([^\.]*\.)+).*/\2/p')
 
 		sections=($(\
 			wiktionary -r $cmd $lang $search $completePathPart | \
@@ -52,11 +56,12 @@
 		if [[ ${#sections} != 0 ]]; then
 			if [[ $completePathPart == '' ]]; then
 				_message "sections on page '$search'"
-				compadd -S '.' $sections 
+				compadd -S '.' $sections
 			else
 				_message "subsections in '$lastPathPart'"
 				compadd -S '.' -p $completePathPart $sections
 			fi
+			_describe -t kw 'keyword' keywords
 		else
 			if [[ $completePathPart == '' ]]; then
 				_message "no page for '$search'"
@@ -79,4 +84,4 @@ wiktionary_options=(
 	{-c,--compact}'[Compact output]'
 	{-v,--verbose}'[Verbose output]'
 )
-_arguments $wiktionary_options "*::wiktionary commands:_wiktionary_cmds" 
+_arguments $wiktionary_options "*::wiktionary commands:_wiktionary_cmds"
